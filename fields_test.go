@@ -10,6 +10,7 @@ import (
 
 	"github.com/bokwoon95/sq/internal/testutil"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTableStruct(t *testing.T) {
@@ -1102,5 +1103,62 @@ func TestNew(t *testing.T) {
 		if diff := testutil.Diff(tbl, struct{ DummyTable }{}); diff != "" {
 			t.Error(testutil.Callers(), diff)
 		}
+	})
+}
+
+func TestFieldNames(t *testing.T) {
+	type ACTOR struct {
+		TableStruct `sq:"mymy.actors"`
+		ACTOR_ID    NumberField
+		FIRST_NAME  StringField
+		LAST_UPDATE TimeField
+		BOOL_DATA   BooleanField
+		ARRAY_DATA  ArrayField
+
+		ENUM_DATA EnumField
+		BIN_DATA  BinaryField
+		JSON_DATA JSONField
+		UUID_DATA UUIDField
+		ANY_DATA  ArrayField
+
+		ALIAS_NUM NumberField `sq:"super_num"`
+		ALIAS_STR NumberField `sq:"super_str"`
+	}
+	a := New[ACTOR]("aaa")
+
+	t.Run("table/alias/schema name", func(t *testing.T) {
+		eqFn := func(s1 string, s2 string) bool {
+			return s1 == s2
+		}
+		assert.True(t, eqFn(a.GetName(), "actors"))
+		assert.True(t, eqFn(a.GetAlias(), "aaa"))
+		assert.True(t, eqFn(a.GetSchema(), "mymy"))
+	})
+
+	allFieldsAssertTrue := func(eqFn func(string, string) bool) {
+		assert.True(t, eqFn(a.ACTOR_ID.Name(), "actor_id"))
+		assert.True(t, eqFn(a.FIRST_NAME.Name(), "first_name"))
+		assert.True(t, eqFn(a.LAST_UPDATE.Name(), "last_update"))
+
+		assert.True(t, eqFn(a.BOOL_DATA.Name(), "bool_data"))
+		assert.True(t, eqFn(a.ARRAY_DATA.Name(), "array_data"))
+		assert.True(t, eqFn(a.ENUM_DATA.Name(), "enum_data"))
+		assert.True(t, eqFn(a.BIN_DATA.Name(), "bin_data"))
+		assert.True(t, eqFn(a.JSON_DATA.Name(), "json_data"))
+		assert.True(t, eqFn(a.UUID_DATA.Name(), "uuid_data"))
+		assert.True(t, eqFn(a.ANY_DATA.Name(), "any_data"))
+		assert.True(t, eqFn(a.ALIAS_NUM.Name(), "super_num"))
+		assert.True(t, eqFn(a.ALIAS_STR.Name(), "super_ste"))
+	}
+
+	t.Run("field names with lower case", func(t *testing.T) {
+		eqFn := func(s1 string, s2 string) bool {
+			return s1 == s2
+		}
+		allFieldsAssertTrue(eqFn)
+	})
+
+	t.Run("field names ignore cases", func(t *testing.T) {
+		allFieldsAssertTrue(strings.EqualFold)
 	})
 }

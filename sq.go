@@ -84,6 +84,11 @@ type Window interface {
 	IsWindow()
 }
 
+// Namer represents a name.
+type Namer interface {
+	Name() string
+}
+
 // Field is either a table column or some SQL expression.
 type Field interface {
 	SQLWriter
@@ -214,6 +219,12 @@ func (ts TableStruct) WriteSQL(ctx context.Context, dialect string, buf *bytes.B
 	buf.WriteString(QuoteIdentifier(dialect, ts.name))
 	return nil
 }
+
+// GetSchema returns the schema name of the TableStruct.
+func (ts TableStruct) GetSchema() string { return ts.schema }
+
+// GetName returns the table name of the TableStruct.
+func (ts TableStruct) GetName() string { return ts.name }
 
 // GetAlias returns the alias of the TableStruct.
 func (ts TableStruct) GetAlias() string { return ts.alias }

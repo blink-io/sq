@@ -39,6 +39,7 @@ type AnyField struct {
 var _ interface {
 	Field
 	Any
+	Namer
 	WithPrefix(string) Field
 } = (*AnyField)(nil)
 
@@ -46,6 +47,9 @@ var _ interface {
 func NewAnyField(name string, tbl TableStruct) AnyField {
 	return AnyField{table: tbl, name: name}
 }
+
+// Name returns the field name.
+func (field AnyField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field AnyField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -192,6 +196,7 @@ type ArrayField struct {
 var _ interface {
 	Field
 	Array
+	Namer
 	WithPrefix(string) Field
 } = (*ArrayField)(nil)
 
@@ -199,6 +204,9 @@ var _ interface {
 func NewArrayField(fieldName string, tableName TableStruct) ArrayField {
 	return ArrayField{table: tableName, name: fieldName}
 }
+
+// Name returns the field name.
+func (field ArrayField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field ArrayField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -268,6 +276,7 @@ type BinaryField struct {
 var _ interface {
 	Field
 	Binary
+	Namer
 	WithPrefix(string) Field
 } = (*BinaryField)(nil)
 
@@ -275,6 +284,9 @@ var _ interface {
 func NewBinaryField(fieldName string, tableName TableStruct) BinaryField {
 	return BinaryField{table: tableName, name: fieldName}
 }
+
+// Name returns the field name.
+func (field BinaryField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field BinaryField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -381,6 +393,7 @@ var _ interface {
 	Field
 	Boolean
 	Predicate
+	Namer
 	WithPrefix(string) Field
 } = (*BooleanField)(nil)
 
@@ -388,6 +401,9 @@ var _ interface {
 func NewBooleanField(fieldName string, tableName TableStruct) BooleanField {
 	return BooleanField{table: tableName, name: fieldName}
 }
+
+// Name returns the field name.
+func (field BooleanField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field BooleanField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -492,6 +508,7 @@ type EnumField struct {
 var _ interface {
 	Field
 	Enum
+	Namer
 	WithPrefix(string) Field
 } = (*EnumField)(nil)
 
@@ -499,6 +516,8 @@ var _ interface {
 func NewEnumField(name string, tbl TableStruct) EnumField {
 	return EnumField{table: tbl, name: name}
 }
+
+func (field EnumField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field EnumField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -584,6 +603,7 @@ var _ interface {
 	Binary
 	JSON
 	String
+	Namer
 	WithPrefix(string) Field
 } = (*JSONField)(nil)
 
@@ -591,6 +611,9 @@ var _ interface {
 func NewJSONField(name string, tbl TableStruct) JSONField {
 	return JSONField{table: tbl, name: name}
 }
+
+// Name returns the field name.
+func (field JSONField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field JSONField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -668,6 +691,7 @@ type NumberField struct {
 var _ interface {
 	Field
 	Number
+	Namer
 	WithPrefix(string) Field
 } = (*NumberField)(nil)
 
@@ -675,6 +699,9 @@ var _ interface {
 func NewNumberField(name string, tbl TableStruct) NumberField {
 	return NumberField{table: tbl, name: name}
 }
+
+// Name returns the field name.
+func (field NumberField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field NumberField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -855,6 +882,7 @@ type StringField struct {
 var _ interface {
 	Field
 	String
+	Namer
 	WithPrefix(string) Field
 } = (*StringField)(nil)
 
@@ -862,6 +890,9 @@ var _ interface {
 func NewStringField(name string, tbl TableStruct) StringField {
 	return StringField{table: tbl, name: name}
 }
+
+// Name returns the field name.
+func (field StringField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field StringField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -1033,6 +1064,7 @@ type TimeField struct {
 var _ interface {
 	Field
 	Time
+	Namer
 	WithPrefix(string) Field
 } = (*TimeField)(nil)
 
@@ -1040,6 +1072,9 @@ var _ interface {
 func NewTimeField(name string, tbl TableStruct) TimeField {
 	return TimeField{table: tbl, name: name}
 }
+
+// Name returns the field name.
+func (field TimeField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field TimeField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -1316,6 +1351,7 @@ type UUIDField struct {
 var _ interface {
 	Field
 	UUID
+	Namer
 	WithPrefix(string) Field
 } = (*UUIDField)(nil)
 
@@ -1323,6 +1359,9 @@ var _ interface {
 func NewUUIDField(name string, tbl TableStruct) UUIDField {
 	return UUIDField{table: tbl, name: name}
 }
+
+// Name returns the field name.
+func (field UUIDField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field UUIDField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {

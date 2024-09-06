@@ -1109,20 +1109,23 @@ func TestNew(t *testing.T) {
 func TestFieldNames(t *testing.T) {
 	type ACTOR struct {
 		TableStruct `sq:"mymy.actors"`
-		ACTOR_ID    NumberField
-		FIRST_NAME  StringField
-		LAST_UPDATE TimeField
-		BOOL_DATA   BooleanField
-		ARRAY_DATA  ArrayField
+		NUM_FIELD   NumberField
+		STR_FIELD   StringField
+		TIME_FIELD  TimeField
+		BOOL_FIELD  BooleanField
+		ARRAY_FIELD ArrayField
 
-		ENUM_DATA EnumField
-		BIN_DATA  BinaryField
-		JSON_DATA JSONField
-		UUID_DATA UUIDField
-		ANY_DATA  ArrayField
+		ENUM_FIELD EnumField
+		BIN_FIELD  BinaryField
+		JSON_FIELD JSONField
+		UUID_FIELD UUIDField
+		ANY_FIELD  ArrayField
 
 		ALIAS_NUM NumberField `sq:"super_num"`
-		ALIAS_STR NumberField `sq:"super_str"`
+		ALIAS_STR StringField `sq:"super_str"`
+		CAMEL_STR StringField `sq:"CamelStr"`
+		UPPER_STR StringField `sq:"UPPER_STR"`
+		UPPERALL  StringField `sq:"UPPERALL"`
 	}
 	a := New[ACTOR]("aaa")
 
@@ -1136,19 +1139,22 @@ func TestFieldNames(t *testing.T) {
 	})
 
 	allFieldsAssertTrue := func(eqFn func(string, string) bool) {
-		assert.True(t, eqFn(a.ACTOR_ID.Name(), "actor_id"))
-		assert.True(t, eqFn(a.FIRST_NAME.Name(), "first_name"))
-		assert.True(t, eqFn(a.LAST_UPDATE.Name(), "last_update"))
+		assert.True(t, eqFn(a.NUM_FIELD.Name(), "num_field"))
+		assert.True(t, eqFn(a.STR_FIELD.Name(), "str_field"))
+		assert.True(t, eqFn(a.TIME_FIELD.Name(), "time_field"))
 
-		assert.True(t, eqFn(a.BOOL_DATA.Name(), "bool_data"))
-		assert.True(t, eqFn(a.ARRAY_DATA.Name(), "array_data"))
-		assert.True(t, eqFn(a.ENUM_DATA.Name(), "enum_data"))
-		assert.True(t, eqFn(a.BIN_DATA.Name(), "bin_data"))
-		assert.True(t, eqFn(a.JSON_DATA.Name(), "json_data"))
-		assert.True(t, eqFn(a.UUID_DATA.Name(), "uuid_data"))
-		assert.True(t, eqFn(a.ANY_DATA.Name(), "any_data"))
+		assert.True(t, eqFn(a.BOOL_FIELD.Name(), "bool_field"))
+		assert.True(t, eqFn(a.ARRAY_FIELD.Name(), "array_field"))
+		assert.True(t, eqFn(a.ENUM_FIELD.Name(), "enum_field"))
+		assert.True(t, eqFn(a.BIN_FIELD.Name(), "bin_field"))
+		assert.True(t, eqFn(a.JSON_FIELD.Name(), "json_field"))
+		assert.True(t, eqFn(a.UUID_FIELD.Name(), "uuid_field"))
+		assert.True(t, eqFn(a.ANY_FIELD.Name(), "any_field"))
 		assert.True(t, eqFn(a.ALIAS_NUM.Name(), "super_num"))
-		assert.True(t, eqFn(a.ALIAS_STR.Name(), "super_ste"))
+		assert.True(t, eqFn(a.ALIAS_STR.Name(), "super_str"))
+		assert.True(t, eqFn(a.CAMEL_STR.Name(), "CamelStr"))
+		assert.True(t, eqFn(a.UPPER_STR.Name(), "UPPER_STR"))
+		assert.True(t, eqFn(a.UPPERALL.Name(), "UPPERALL"))
 	}
 
 	t.Run("field names with lower case", func(t *testing.T) {

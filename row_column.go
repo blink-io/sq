@@ -603,7 +603,7 @@ func (row *Row) Float64Field(field Number) float64 {
 	return row.NullFloat64Field(field).Float64
 }
 
-// NullFloat64 returns the sql.NullFloat64 valye of the expression.
+// NullFloat64 returns the sql.NullFloat64 value of the expression.
 func (row *Row) NullFloat64(format string, values ...any) sql.NullFloat64 {
 	if row.queryIsStatic {
 		index, ok := row.columnIndex[format]

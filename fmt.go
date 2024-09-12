@@ -280,9 +280,9 @@ func Sprintf(dialect string, query string, args []any) (string, error) {
 	if len(args) == 0 {
 		return query, nil
 	}
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	buf.Grow(len(query))
 	namedIndices := make(map[string]int)
 	for i, arg := range args {

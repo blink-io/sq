@@ -48,7 +48,7 @@ func CrossJoin(table Table) JoinTable {
 	return CustomJoin(JoinCross, table)
 }
 
-// CustomJoin creates a new JoinTable with the a custom join operator.
+// CustomJoin creates a new JoinTable with a custom join operator.
 func CustomJoin(joinOperator string, table Table, predicates ...Predicate) JoinTable {
 	switch len(predicates) {
 	case 0:

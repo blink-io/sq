@@ -115,7 +115,7 @@ func (w WindowDefinition) IsWindow() {}
 // NamedWindows represents a slice of NamedWindows.
 type NamedWindows []NamedWindow
 
-// WriteSQL imeplements the SQLWriter interface.
+// WriteSQL implements the SQLWriter interface.
 func (ws NamedWindows) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	var err error
 	for i, window := range ws {

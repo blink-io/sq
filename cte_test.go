@@ -73,9 +73,9 @@ func TestCTEs(t *testing.T) {
 		tt := tt
 		t.Run(tt.description, func(t *testing.T) {
 			t.Parallel()
-			buf, args, params := bufpool.Get().(*bytes.Buffer), &[]any{}, make(map[string][]int)
+			buf, args, params := bufPool.Get().(*bytes.Buffer), &[]any{}, make(map[string][]int)
 			buf.Reset()
-			defer bufpool.Put(buf)
+			defer bufPool.Put(buf)
 			err := writeCTEs(context.Background(), tt.dialect, buf, args, params, tt.ctes)
 			if err != nil {
 				t.Fatal(testutil.Callers(), err)
@@ -94,9 +94,9 @@ func TestCTEs(t *testing.T) {
 
 	t.Run("invalid cte", func(t *testing.T) {
 		t.Parallel()
-		buf, args, params := bufpool.Get().(*bytes.Buffer), &[]any{}, make(map[string][]int)
+		buf, args, params := bufPool.Get().(*bytes.Buffer), &[]any{}, make(map[string][]int)
 		buf.Reset()
-		defer bufpool.Put(buf)
+		defer bufPool.Put(buf)
 		// no name
 		err := writeCTEs(context.Background(), "", buf, args, params, []CTE{
 			NewCTE("", nil, Queryf("SELECT 1")),
@@ -115,9 +115,9 @@ func TestCTEs(t *testing.T) {
 
 	t.Run("err", func(t *testing.T) {
 		t.Parallel()
-		buf, args, params := bufpool.Get().(*bytes.Buffer), &[]any{}, make(map[string][]int)
+		buf, args, params := bufPool.Get().(*bytes.Buffer), &[]any{}, make(map[string][]int)
 		buf.Reset()
-		defer bufpool.Put(buf)
+		defer bufPool.Put(buf)
 		// VariadicQuery
 		err := writeCTEs(context.Background(), "", buf, args, params, []CTE{
 			NewCTE("cte", nil, Union(

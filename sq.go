@@ -15,7 +15,7 @@ import (
 	"github.com/bokwoon95/sq/internal/pqarray"
 )
 
-var bufpool = &sync.Pool{
+var bufPool = &sync.Pool{
 	New: func() any { return &bytes.Buffer{} },
 }
 
@@ -245,9 +245,9 @@ func getAlias(w SQLWriter) string {
 }
 
 func toString(dialect string, w SQLWriter) string {
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	var args []any
 	_ = w.WriteSQL(context.Background(), dialect, buf, &args, nil)
 	return buf.String()

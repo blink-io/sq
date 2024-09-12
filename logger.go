@@ -165,9 +165,9 @@ func (l *sqLogger) SqLogQuery(ctx context.Context, queryStats QueryStats) {
 		blue = colorBlue
 		purple = colorPurple
 	}
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	if queryStats.Err == nil {
 		buf.WriteString(green + "[OK]" + reset)
 	} else {

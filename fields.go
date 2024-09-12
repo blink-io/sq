@@ -268,7 +268,7 @@ type BinaryField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -285,7 +285,7 @@ func NewBinaryField(fieldName string, tableName TableStruct) BinaryField {
 // WriteSQL implements the SQLWriter interface.
 func (field BinaryField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -314,16 +314,16 @@ func (field BinaryField) Desc() BinaryField {
 // NullsLast returns a new BinaryField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field BinaryField) NullsLast() BinaryField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new BinaryField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field BinaryField) NullsFirst() BinaryField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -383,7 +383,7 @@ type BooleanField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -401,7 +401,7 @@ func NewBooleanField(fieldName string, tableName TableStruct) BooleanField {
 // WriteSQL implements the SQLWriter interface.
 func (field BooleanField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -430,16 +430,16 @@ func (field BooleanField) Desc() BooleanField {
 // NullsLast returns a new BooleanField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field BooleanField) NullsLast() BooleanField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new BooleanField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field BooleanField) NullsFirst() BooleanField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -870,7 +870,7 @@ type StringField struct {
 	alias      string
 	collation  string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -895,7 +895,7 @@ func (field StringField) WriteSQL(ctx context.Context, dialect string, buf *byte
 			buf.WriteString(QuoteIdentifier(dialect, field.collation))
 		}
 	}
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -930,16 +930,16 @@ func (field StringField) Desc() StringField {
 // NullsLast returns a new StringField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field StringField) NullsLast() StringField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new StringField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field StringField) NullsFirst() StringField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -1051,7 +1051,7 @@ type TimeField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -1068,7 +1068,7 @@ func NewTimeField(name string, tbl TableStruct) TimeField {
 // WriteSQL implements the SQLWriter interface.
 func (field TimeField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -1097,16 +1097,16 @@ func (field TimeField) Desc() TimeField {
 // NullsLast returns a new TimeField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field TimeField) NullsLast() TimeField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new TimeField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field TimeField) NullsFirst() TimeField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -1264,7 +1264,7 @@ func (ts *Timestamp) Scan(value any) error {
 		// Assume a millisecond unix timestamp if it's 13 digits -- too
 		// large to be a reasonable timestamp in seconds.
 		if value > 1e12 || value < -1e12 {
-			value *= int64(time.Millisecond) // convert ms to nsec
+			value *= int64(time.Millisecond) // convert ms to ns
 			ts.Time = time.Unix(0, value)
 		} else {
 			ts.Time = time.Unix(value, 0)
@@ -1302,12 +1302,12 @@ func (ts *Timestamp) Scan(value any) error {
 		}
 		return fmt.Errorf("could not convert %q into time", value)
 	default:
-		var nulltime sql.NullTime
-		err := nulltime.Scan(value)
+		var nullTime sql.NullTime
+		err := nullTime.Scan(value)
 		if err != nil {
 			return err
 		}
-		ts.Time, ts.Valid = nulltime.Time, nulltime.Valid
+		ts.Time, ts.Valid = nullTime.Time, nullTime.Valid
 		return nil
 	}
 }
@@ -1337,7 +1337,7 @@ type UUIDField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -1354,7 +1354,7 @@ func NewUUIDField(name string, tbl TableStruct) UUIDField {
 // WriteSQL implements the SQLWriter interface.
 func (field UUIDField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -1383,16 +1383,16 @@ func (field UUIDField) Desc() UUIDField {
 // NullsLast returns a new UUIDField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field UUIDField) NullsLast() UUIDField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new UUIDField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field UUIDField) NullsFirst() UUIDField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -1463,8 +1463,8 @@ func (field UUIDField) IsUUID() {}
 // empty string is equivalent to giving no alias to the table.
 func New[T Table](alias string) T {
 	var tbl T
-	ptrvalue := reflect.ValueOf(&tbl)
-	value := reflect.Indirect(ptrvalue)
+	ptrVal := reflect.ValueOf(&tbl)
+	value := reflect.Indirect(ptrVal)
 	typ := value.Type()
 	if typ.Kind() != reflect.Struct {
 		return tbl
@@ -1472,19 +1472,19 @@ func New[T Table](alias string) T {
 	if value.NumField() == 0 {
 		return tbl
 	}
-	firstfield := value.Field(0)
-	firstfieldType := typ.Field(0)
-	if !firstfield.CanInterface() {
+	firstField := value.Field(0)
+	firstFieldType := typ.Field(0)
+	if !firstField.CanInterface() {
 		return tbl
 	}
-	_, ok := firstfield.Interface().(TableStruct)
+	_, ok := firstField.Interface().(TableStruct)
 	if !ok {
 		return tbl
 	}
-	if !firstfield.CanSet() {
+	if !firstField.CanSet() {
 		return tbl
 	}
-	tag := firstfieldType.Tag.Get("sq")
+	tag := firstFieldType.Tag.Get("sq")
 	tableSchema, tableName, ok := strings.Cut(tag, ".")
 	if !ok {
 		tableSchema, tableName = "", tableSchema
@@ -1493,7 +1493,7 @@ func New[T Table](alias string) T {
 		tableName = strings.ToLower(typ.Name())
 	}
 	tableStruct := NewTableStruct(tableSchema, tableName, alias)
-	firstfield.Set(reflect.ValueOf(tableStruct))
+	firstField.Set(reflect.ValueOf(tableStruct))
 	for i := 1; i < value.NumField(); i++ {
 		v := value.Field(i)
 		if !v.CanInterface() {
@@ -1545,7 +1545,7 @@ func writeFieldIdentifier(ctx context.Context, dialect string, buf *bytes.Buffer
 	buf.WriteString(QuoteIdentifier(dialect, fieldName))
 }
 
-func writeFieldOrder(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int, desc, nullsfirst sql.NullBool) {
+func writeFieldOrder(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int, desc, nullsFirst sql.NullBool) {
 	if desc.Valid {
 		if desc.Bool {
 			buf.WriteString(" DESC")
@@ -1553,8 +1553,8 @@ func writeFieldOrder(ctx context.Context, dialect string, buf *bytes.Buffer, arg
 			buf.WriteString(" ASC")
 		}
 	}
-	if nullsfirst.Valid {
-		if nullsfirst.Bool {
+	if nullsFirst.Valid {
+		if nullsFirst.Bool {
 			buf.WriteString(" NULLS FIRST")
 		} else {
 			buf.WriteString(" NULLS LAST")

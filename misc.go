@@ -521,15 +521,15 @@ var _ interface {
 // WriteSQL implements the SQLWriter interface.
 func (vs SelectValues) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	var err error
-	for i, rowvalue := range vs.RowValues {
+	for i, rowValue := range vs.RowValues {
 		if i > 0 {
 			buf.WriteString(" UNION ALL ")
 		}
-		if len(vs.Columns) > 0 && len(rowvalue) != len(vs.Columns) {
-			return fmt.Errorf("rowvalue #%d: got %d values, want %d values (%s)", i+1, len(rowvalue), len(vs.Columns), strings.Join(vs.Columns, ", "))
+		if len(vs.Columns) > 0 && len(rowValue) != len(vs.Columns) {
+			return fmt.Errorf("rowvalue #%d: got %d values, want %d values (%s)", i+1, len(rowValue), len(vs.Columns), strings.Join(vs.Columns, ", "))
 		}
 		buf.WriteString("SELECT ")
-		for j, value := range rowvalue {
+		for j, value := range rowValue {
 			if j > 0 {
 				buf.WriteString(", ")
 			}
@@ -589,9 +589,9 @@ func (vs TableValues) WriteSQL(ctx context.Context, dialect string, buf *bytes.B
 	}
 	var err error
 	buf.WriteString("VALUES ")
-	for i, rowvalue := range vs.RowValues {
-		if len(vs.Columns) > 0 && len(vs.Columns) != len(rowvalue) {
-			return fmt.Errorf("rowvalue #%d: got %d values, want %d values (%s)", i+1, len(rowvalue), len(vs.Columns), strings.Join(vs.Columns, ", "))
+	for i, rowValue := range vs.RowValues {
+		if len(vs.Columns) > 0 && len(vs.Columns) != len(rowValue) {
+			return fmt.Errorf("rowvalue #%d: got %d values, want %d values (%s)", i+1, len(rowValue), len(vs.Columns), strings.Join(vs.Columns, ", "))
 		}
 		if i > 0 {
 			buf.WriteString(", ")
@@ -601,7 +601,7 @@ func (vs TableValues) WriteSQL(ctx context.Context, dialect string, buf *bytes.B
 		} else {
 			buf.WriteString("(")
 		}
-		for j, value := range rowvalue {
+		for j, value := range rowValue {
 			if j > 0 {
 				buf.WriteString(", ")
 			}

@@ -530,9 +530,9 @@ func ToSQLContext(ctx context.Context, dialect string, w SQLWriter, params map[s
 			dialect = q.GetDialect()
 		}
 	}
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	err = w.WriteSQL(ctx, dialect, buf, &args, params)
 	query = buf.String()
 	if err != nil {

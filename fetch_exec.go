@@ -965,7 +965,7 @@ func (compiledExec *CompiledExec) PrepareContext(ctx context.Context, db DB) (*P
 	return preparedExec, nil
 }
 
-// PrepareExec is the result of preparing a CompiledExec on a DB.
+// PreparedExec is the result of preparing a CompiledExec on a DB.
 type PreparedExec struct {
 	compiledExec *CompiledExec
 	stmt         *sql.Stmt

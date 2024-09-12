@@ -49,7 +49,7 @@ func (cte CTE) Materialized() CTE {
 	return cte
 }
 
-// Materialized returns a new CTE marked as NOT MATERIALIZED. This only works
+// NotMaterialized returns a new CTE marked as NOT MATERIALIZED. This only works
 // on postgres.
 func (cte CTE) NotMaterialized() CTE {
 	cte.materialized.Valid = true
@@ -65,7 +65,7 @@ func (cte CTE) Field(name string) AnyField {
 // GetAlias returns the alias of the CTE.
 func (cte CTE) GetAlias() string { return cte.alias }
 
-// AssertTable implements the Table interface.
+// IsTable implements the Table interface.
 func (cte CTE) IsTable() {}
 
 func writeCTEs(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int, ctes []CTE) error {

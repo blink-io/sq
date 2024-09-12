@@ -1275,7 +1275,7 @@ func (q SQLServerSelectQuery) Top(limit any) SQLServerSelectQuery {
 	return q
 }
 
-// Top sets the LimitTopPercent field of the SQLServerSelectQuery.
+// TopPercent sets the LimitTopPercent field of the SQLServerSelectQuery.
 func (q SQLServerSelectQuery) TopPercent(percentLimit any) SQLServerSelectQuery {
 	q.LimitTopPercent = percentLimit
 	return q

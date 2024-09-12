@@ -381,6 +381,17 @@ func TestJSONField(t *testing.T) {
 		description: "Set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
+		description: "Set Map", item: field.Set(map[string]any{
+			"name":  "Name",
+			"level": 88,
+		}),
+		wantQuery: "field = ?",
+		wantArgs:  []any{`{"level":88,"name":"Name"}`},
+	}, {
+		description: "Set Slice", item: field.Set([]int{1, 2, 3}),
+		wantQuery: "field = ?",
+		wantArgs:  []any{`[1,2,3]`},
+	}, {
 		description: "Set", item: field.SetJSON([]int{1, 2, 3}),
 		wantQuery: "field = ?",
 		wantArgs:  []any{`[1,2,3]`},
@@ -1139,22 +1150,22 @@ func TestFieldNames(t *testing.T) {
 	})
 
 	allFieldsAssertTrue := func(eqFn func(string, string) bool) {
-		assert.True(t, eqFn(a.NUM_FIELD.Name(), "num_field"))
-		assert.True(t, eqFn(a.STR_FIELD.Name(), "str_field"))
-		assert.True(t, eqFn(a.TIME_FIELD.Name(), "time_field"))
+		assert.True(t, eqFn(a.NUM_FIELD.GetName(), "num_field"))
+		assert.True(t, eqFn(a.STR_FIELD.GetName(), "str_field"))
+		assert.True(t, eqFn(a.TIME_FIELD.GetName(), "time_field"))
 
-		assert.True(t, eqFn(a.BOOL_FIELD.Name(), "bool_field"))
-		assert.True(t, eqFn(a.ARRAY_FIELD.Name(), "array_field"))
-		assert.True(t, eqFn(a.ENUM_FIELD.Name(), "enum_field"))
-		assert.True(t, eqFn(a.BIN_FIELD.Name(), "bin_field"))
-		assert.True(t, eqFn(a.JSON_FIELD.Name(), "json_field"))
-		assert.True(t, eqFn(a.UUID_FIELD.Name(), "uuid_field"))
-		assert.True(t, eqFn(a.ANY_FIELD.Name(), "any_field"))
-		assert.True(t, eqFn(a.ALIAS_NUM.Name(), "super_num"))
-		assert.True(t, eqFn(a.ALIAS_STR.Name(), "super_str"))
-		assert.True(t, eqFn(a.CAMEL_STR.Name(), "CamelStr"))
-		assert.True(t, eqFn(a.UPPER_STR.Name(), "UPPER_STR"))
-		assert.True(t, eqFn(a.UPPERALL.Name(), "UPPERALL"))
+		assert.True(t, eqFn(a.BOOL_FIELD.GetName(), "bool_field"))
+		assert.True(t, eqFn(a.ARRAY_FIELD.GetName(), "array_field"))
+		assert.True(t, eqFn(a.ENUM_FIELD.GetName(), "enum_field"))
+		assert.True(t, eqFn(a.BIN_FIELD.GetName(), "bin_field"))
+		assert.True(t, eqFn(a.JSON_FIELD.GetName(), "json_field"))
+		assert.True(t, eqFn(a.UUID_FIELD.GetName(), "uuid_field"))
+		assert.True(t, eqFn(a.ANY_FIELD.GetName(), "any_field"))
+		assert.True(t, eqFn(a.ALIAS_NUM.GetName(), "super_num"))
+		assert.True(t, eqFn(a.ALIAS_STR.GetName(), "super_str"))
+		assert.True(t, eqFn(a.CAMEL_STR.GetName(), "CamelStr"))
+		assert.True(t, eqFn(a.UPPER_STR.GetName(), "UPPER_STR"))
+		assert.True(t, eqFn(a.UPPERALL.GetName(), "UPPERALL"))
 	}
 
 	t.Run("field names with lower case", func(t *testing.T) {

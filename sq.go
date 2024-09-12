@@ -84,11 +84,6 @@ type Window interface {
 	IsWindow()
 }
 
-// Namer represents a name.
-type Namer interface {
-	Name() string
-}
-
 // Field is either a table column or some SQL expression.
 type Field interface {
 	SQLWriter

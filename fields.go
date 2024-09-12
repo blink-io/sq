@@ -33,13 +33,12 @@ type AnyField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
 	Field
 	Any
-	Namer
 	WithPrefix(string) Field
 } = (*AnyField)(nil)
 
@@ -48,13 +47,10 @@ func NewAnyField(name string, tbl TableStruct) AnyField {
 	return AnyField{table: tbl, name: name}
 }
 
-// Name returns the field name.
-func (field AnyField) Name() string { return field.name }
-
 // WriteSQL implements the SQLWriter interface.
 func (field AnyField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -83,16 +79,16 @@ func (field AnyField) Desc() AnyField {
 // NullsLast returns a new NumberField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field AnyField) NullsLast() AnyField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new NumberField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field AnyField) NullsFirst() AnyField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -113,7 +109,7 @@ func (field AnyField) IsNotNull() Predicate { return Expr("{} IS NOT NULL", fiel
 // corresponds to the expression 'field IN (x, y, z)'.
 func (field AnyField) In(value any) Predicate { return In(field, value) }
 
-// In returns a 'field NOT IN (value)' Predicate. The value can be a slice, which
+// NotIn returns a 'field NOT IN (value)' Predicate. The value can be a slice, which
 // corresponds to the expression 'field NOT IN (x, y, z)'.
 func (field AnyField) NotIn(value any) Predicate { return NotIn(field, value) }
 
@@ -153,6 +149,9 @@ func (field AnyField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
 
+// GetName returns the name of the AnyField.
+func (field AnyField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the AnyField.
 func (field AnyField) GetAlias() string { return field.alias }
 
@@ -183,7 +182,7 @@ func (field AnyField) IsString() {}
 // IsTime implements the Time interface.
 func (field AnyField) IsTime() {}
 
-// IsUUIDType implements the UUID interface.
+// IsUUID implements the UUID interface.
 func (field AnyField) IsUUID() {}
 
 // ArrayField represents an SQL array field.
@@ -196,7 +195,6 @@ type ArrayField struct {
 var _ interface {
 	Field
 	Array
-	Namer
 	WithPrefix(string) Field
 } = (*ArrayField)(nil)
 
@@ -204,9 +202,6 @@ var _ interface {
 func NewArrayField(fieldName string, tableName TableStruct) ArrayField {
 	return ArrayField{table: tableName, name: fieldName}
 }
-
-// Name returns the field name.
-func (field ArrayField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field ArrayField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -230,7 +225,7 @@ func (field ArrayField) WithPrefix(prefix string) Field {
 // IsNull returns a 'field IS NULL' Predicate.
 func (field ArrayField) IsNull() Predicate { return Expr("{} IS NULL", field) }
 
-// IsNull returns a 'field IS NOT NULL' Predicate.
+// IsNotNull returns a 'field IS NOT NULL' Predicate.
 func (field ArrayField) IsNotNull() Predicate { return Expr("{} IS NOT NULL", field) }
 
 // Set returns an Assignment assigning the value to the field.
@@ -255,6 +250,9 @@ func (field ArrayField) Setf(format string, values ...any) Assignment {
 	return Set(field, Expr(format, values...))
 }
 
+// GetName returns the name of the ArrayField.
+func (field ArrayField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the ArrayField.
 func (field ArrayField) GetAlias() string { return field.alias }
 
@@ -276,7 +274,6 @@ type BinaryField struct {
 var _ interface {
 	Field
 	Binary
-	Namer
 	WithPrefix(string) Field
 } = (*BinaryField)(nil)
 
@@ -284,9 +281,6 @@ var _ interface {
 func NewBinaryField(fieldName string, tableName TableStruct) BinaryField {
 	return BinaryField{table: tableName, name: fieldName}
 }
-
-// Name returns the field name.
-func (field BinaryField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field BinaryField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -371,6 +365,9 @@ func (field BinaryField) Setf(format string, values ...any) Assignment {
 // SetBytes returns an Assignment assigning a []byte to the field.
 func (field BinaryField) SetBytes(b []byte) Assignment { return Set(field, b) }
 
+// GetName returns the name of the BinaryField.
+func (field BinaryField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the BinaryField.
 func (field BinaryField) GetAlias() string { return field.alias }
 
@@ -393,7 +390,6 @@ var _ interface {
 	Field
 	Boolean
 	Predicate
-	Namer
 	WithPrefix(string) Field
 } = (*BooleanField)(nil)
 
@@ -401,9 +397,6 @@ var _ interface {
 func NewBooleanField(fieldName string, tableName TableStruct) BooleanField {
 	return BooleanField{table: tableName, name: fieldName}
 }
-
-// Name returns the field name.
-func (field BooleanField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field BooleanField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -428,10 +421,10 @@ func (field BooleanField) Asc() BooleanField {
 
 // Desc returns a new BooleanField indicating that it should be ordered in
 // descending order i.e. 'ORDER BY field DESC'.
-func (f BooleanField) Desc() BooleanField {
-	f.desc.Valid = true
-	f.desc.Bool = true
-	return f
+func (field BooleanField) Desc() BooleanField {
+	field.desc.Valid = true
+	field.desc.Bool = true
+	return field
 }
 
 // NullsLast returns a new BooleanField indicating that it should be ordered
@@ -489,6 +482,9 @@ func (field BooleanField) Setf(format string, values ...any) Assignment {
 // b'.
 func (field BooleanField) SetBool(b bool) Assignment { return Set(field, b) }
 
+// GetName returns the name of the BooleanField.
+func (field BooleanField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the BooleanField.
 func (field BooleanField) GetAlias() string { return field.alias }
 
@@ -508,7 +504,6 @@ type EnumField struct {
 var _ interface {
 	Field
 	Enum
-	Namer
 	WithPrefix(string) Field
 } = (*EnumField)(nil)
 
@@ -517,7 +512,7 @@ func NewEnumField(name string, tbl TableStruct) EnumField {
 	return EnumField{table: tbl, name: name}
 }
 
-func (field EnumField) Name() string { return field.name }
+func (field EnumField) GetName() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field EnumField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -603,7 +598,6 @@ var _ interface {
 	Binary
 	JSON
 	String
-	Namer
 	WithPrefix(string) Field
 } = (*JSONField)(nil)
 
@@ -611,9 +605,6 @@ var _ interface {
 func NewJSONField(name string, tbl TableStruct) JSONField {
 	return JSONField{table: tbl, name: name}
 }
-
-// Name returns the field name.
-func (field JSONField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field JSONField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -649,8 +640,9 @@ func (field JSONField) Set(value any) Assignment {
 	switch reflect.TypeOf(value).Kind() {
 	case reflect.Map, reflect.Struct, reflect.Slice, reflect.Array:
 		return Set(field, JSONValue(value))
+	default:
+		return Set(field, value)
 	}
-	return Set(field, value)
 }
 
 // SetJSON returns an Assignment assigning the value to the field. It wraps the
@@ -663,6 +655,9 @@ func (field JSONField) SetJSON(value any) Assignment {
 func (field JSONField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
+
+// GetName returns the name of the JSONField.
+func (field JSONField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the JSONField.
 func (field JSONField) GetAlias() string { return field.alias }
@@ -685,13 +680,12 @@ type NumberField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
 	Field
 	Number
-	Namer
 	WithPrefix(string) Field
 } = (*NumberField)(nil)
 
@@ -700,13 +694,10 @@ func NewNumberField(name string, tbl TableStruct) NumberField {
 	return NumberField{table: tbl, name: name}
 }
 
-// Name returns the field name.
-func (field NumberField) Name() string { return field.name }
-
 // WriteSQL implements the SQLWriter interface.
 func (field NumberField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -735,16 +726,16 @@ func (field NumberField) Desc() NumberField {
 // NullsLast returns a new NumberField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field NumberField) NullsLast() NumberField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new NumberField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field NumberField) NullsFirst() NumberField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -851,14 +842,17 @@ func (field NumberField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
 
-// SetBytes returns an Assignment assigning an int to the field.
+// SetInt returns an Assignment assigning an int to the field.
 func (field NumberField) SetInt(num int) Assignment { return Set(field, num) }
 
-// SetBytes returns an Assignment assigning an int64 to the field.
+// SetInt64 returns an Assignment assigning an int64 to the field.
 func (field NumberField) SetInt64(num int64) Assignment { return Set(field, num) }
 
-// SetBytes returns an Assignment assigning an float64 to the field.
+// SetFloat64 returns an Assignment assigning an float64 to the field.
 func (field NumberField) SetFloat64(num float64) Assignment { return Set(field, num) }
+
+// GetName returns the name of the NumberField.
+func (field NumberField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the NumberField.
 func (field NumberField) GetAlias() string { return field.alias }
@@ -882,7 +876,6 @@ type StringField struct {
 var _ interface {
 	Field
 	String
-	Namer
 	WithPrefix(string) Field
 } = (*StringField)(nil)
 
@@ -890,9 +883,6 @@ var _ interface {
 func NewStringField(name string, tbl TableStruct) StringField {
 	return StringField{table: tbl, name: name}
 }
-
-// Name returns the field name.
-func (field StringField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field StringField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -970,7 +960,7 @@ func (field StringField) IsNotNull() Predicate { return Expr("{} IS NOT NULL", f
 // corresponds to the expression 'field IN (x, y, z)'.
 func (field StringField) In(value any) Predicate { return In(field, value) }
 
-// In returns a 'field NOT IN (value)' Predicate. The value can be a slice,
+// NotIn returns a 'field NOT IN (value)' Predicate. The value can be a slice,
 // which corresponds to the expression 'field NOT IN (x, y, z)'.
 func (field StringField) NotIn(value any) Predicate { return NotIn(field, value) }
 
@@ -1043,6 +1033,9 @@ func (field StringField) Setf(format string, values ...any) Assignment {
 // SetString returns an Assignment assigning a string to the field.
 func (field StringField) SetString(str string) Assignment { return Set(field, str) }
 
+// GetName returns the name of the StringField.
+func (field StringField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the StringField.
 func (field StringField) GetAlias() string { return field.alias }
 
@@ -1064,7 +1057,6 @@ type TimeField struct {
 var _ interface {
 	Field
 	Time
-	Namer
 	WithPrefix(string) Field
 } = (*TimeField)(nil)
 
@@ -1072,9 +1064,6 @@ var _ interface {
 func NewTimeField(name string, tbl TableStruct) TimeField {
 	return TimeField{table: tbl, name: name}
 }
-
-// Name returns the field name.
-func (field TimeField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field TimeField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -1190,6 +1179,9 @@ func (field TimeField) Setf(format string, values ...any) Assignment {
 
 // SetTime returns an Assignment assigning a time.Time to the field.
 func (field TimeField) SetTime(t time.Time) Assignment { return Set(field, t) }
+
+// GetName returns the name of the TimeField.
+func (field TimeField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the TimeField.
 func (field TimeField) GetAlias() string { return field.alias }
@@ -1351,7 +1343,6 @@ type UUIDField struct {
 var _ interface {
 	Field
 	UUID
-	Namer
 	WithPrefix(string) Field
 } = (*UUIDField)(nil)
 
@@ -1359,9 +1350,6 @@ var _ interface {
 func NewUUIDField(name string, tbl TableStruct) UUIDField {
 	return UUIDField{table: tbl, name: name}
 }
-
-// Name returns the field name.
-func (field UUIDField) Name() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field UUIDField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -1454,10 +1442,13 @@ func (field UUIDField) SetUUID(value any) Assignment {
 	return Set(field, UUIDValue(value))
 }
 
-// Set returns an Assignment assigning the value to the field.
+// Setf returns an Assignment assigning the value to the field.
 func (field UUIDField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
+
+// GetName returns the name of the UUIDField.
+func (field UUIDField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the UUIDField.
 func (field UUIDField) GetAlias() string { return field.alias }

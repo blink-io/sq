@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/bokwoon95/sq/internal/testutil"
-	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5"
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/microsoft/go-mssqldb"
 )
 
 type Color int

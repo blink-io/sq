@@ -569,12 +569,12 @@ func PrepareFetchContext[T any](ctx context.Context, db DB, q Query, rowmapper f
 }
 
 // FetchCursor returns a new cursor.
-func (preparedFetch *PreparedFetch[T]) FetchCursor(params Params) (*Cursor[T], error) {
+func (preparedFetch PreparedFetch[T]) FetchCursor(params Params) (*Cursor[T], error) {
 	return preparedFetch.fetchCursor(context.Background(), params, 1)
 }
 
 // FetchCursorContext is like FetchCursor but additionally requires a context.Context.
-func (preparedFetch *PreparedFetch[T]) FetchCursorContext(ctx context.Context, params Params) (*Cursor[T], error) {
+func (preparedFetch PreparedFetch[T]) FetchCursorContext(ctx context.Context, params Params) (*Cursor[T], error) {
 	return preparedFetch.fetchCursor(ctx, params, 1)
 }
 

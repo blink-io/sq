@@ -11,6 +11,7 @@ import (
 	"github.com/blink-io/sq/internal/testutil"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTableStruct(t *testing.T) {
@@ -380,6 +381,17 @@ func TestJSONField(t *testing.T) {
 	}, {
 		description: "Set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
+	}, {
+		description: "Set Map", item: field.Set(map[string]any{
+			"name":  "Name",
+			"level": 88,
+		}),
+		wantQuery: "field = ?",
+		wantArgs:  []any{`{"level":88,"name":"Name"}`},
+	}, {
+		description: "Set Slice", item: field.Set([]int{1, 2, 3}),
+		wantQuery: "field = ?",
+		wantArgs:  []any{`[1,2,3]`},
 	}, {
 		description: "Set", item: field.SetJSON([]int{1, 2, 3}),
 		wantQuery: "field = ?",
@@ -1103,5 +1115,68 @@ func TestNew(t *testing.T) {
 		if diff := testutil.Diff(tbl, struct{ DummyTable }{}); diff != "" {
 			t.Error(testutil.Callers(), diff)
 		}
+	})
+}
+
+func TestFieldNames(t *testing.T) {
+	type ACTOR struct {
+		TableStruct `sq:"mymy.actors"`
+		NUM_FIELD   NumberField
+		STR_FIELD   StringField
+		TIME_FIELD  TimeField
+		BOOL_FIELD  BooleanField
+		ARRAY_FIELD ArrayField
+
+		ENUM_FIELD EnumField
+		BIN_FIELD  BinaryField
+		JSON_FIELD JSONField
+		UUID_FIELD UUIDField
+		ANY_FIELD  ArrayField
+
+		ALIAS_NUM NumberField `sq:"super_num"`
+		ALIAS_STR StringField `sq:"super_str"`
+		CAMEL_STR StringField `sq:"CamelStr"`
+		UPPER_STR StringField `sq:"UPPER_STR"`
+		UPPERALL  StringField `sq:"UPPERALL"`
+	}
+	a := New[ACTOR]("aaa")
+
+	t.Run("table/alias/schema name", func(t *testing.T) {
+		eqFn := func(s1 string, s2 string) bool {
+			return s1 == s2
+		}
+		assert.True(t, eqFn(a.GetName(), "actors"))
+		assert.True(t, eqFn(a.GetAlias(), "aaa"))
+		assert.True(t, eqFn(a.GetSchema(), "mymy"))
+	})
+
+	allFieldsAssertTrue := func(eqFn func(string, string) bool) {
+		assert.True(t, eqFn(a.NUM_FIELD.GetName(), "num_field"))
+		assert.True(t, eqFn(a.STR_FIELD.GetName(), "str_field"))
+		assert.True(t, eqFn(a.TIME_FIELD.GetName(), "time_field"))
+
+		assert.True(t, eqFn(a.BOOL_FIELD.GetName(), "bool_field"))
+		assert.True(t, eqFn(a.ARRAY_FIELD.GetName(), "array_field"))
+		assert.True(t, eqFn(a.ENUM_FIELD.GetName(), "enum_field"))
+		assert.True(t, eqFn(a.BIN_FIELD.GetName(), "bin_field"))
+		assert.True(t, eqFn(a.JSON_FIELD.GetName(), "json_field"))
+		assert.True(t, eqFn(a.UUID_FIELD.GetName(), "uuid_field"))
+		assert.True(t, eqFn(a.ANY_FIELD.GetName(), "any_field"))
+		assert.True(t, eqFn(a.ALIAS_NUM.GetName(), "super_num"))
+		assert.True(t, eqFn(a.ALIAS_STR.GetName(), "super_str"))
+		assert.True(t, eqFn(a.CAMEL_STR.GetName(), "CamelStr"))
+		assert.True(t, eqFn(a.UPPER_STR.GetName(), "UPPER_STR"))
+		assert.True(t, eqFn(a.UPPERALL.GetName(), "UPPERALL"))
+	}
+
+	t.Run("field names with lower case", func(t *testing.T) {
+		eqFn := func(s1 string, s2 string) bool {
+			return s1 == s2
+		}
+		allFieldsAssertTrue(eqFn)
+	})
+
+	t.Run("field names ignore cases", func(t *testing.T) {
+		allFieldsAssertTrue(strings.EqualFold)
 	})
 }

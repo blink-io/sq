@@ -46,7 +46,7 @@ func (expr Expression) As(alias string) Expression {
 // In returns an 'expr IN (value)' Predicate.
 func (expr Expression) In(value any) Predicate { return In(expr, value) }
 
-// In returns an 'expr NOT IN (value)' Predicate.
+// NotIn returns an 'expr NOT IN (value)' Predicate.
 func (expr Expression) NotIn(value any) Predicate { return NotIn(expr, value) }
 
 // Eq returns an 'expr = value' Predicate.
@@ -103,7 +103,7 @@ func (expr Expression) IsTime() {}
 // IsUUID implements the UUID interface.
 func (expr Expression) IsUUID() {}
 
-func (e Expression) IsAssignment() {}
+func (expr Expression) IsAssignment() {}
 
 // CustomQuery represents a user-defined query.
 type CustomQuery struct {
@@ -312,7 +312,7 @@ func (p VariadicPredicate) GetAlias() string { return p.alias }
 // IsField implements the Field interface.
 func (p VariadicPredicate) IsField() {}
 
-// IsBooleanType implements the Predicate interface.
+// IsBoolean implements the Predicate interface.
 func (p VariadicPredicate) IsBoolean() {}
 
 // assignment represents assigning a value to a Field.
@@ -416,10 +416,10 @@ func (r RowValue) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffe
 	return nil
 }
 
-// In returns an 'rowvalue IN (value)' Predicate.
+// In returns a 'rowvalue IN (value)' Predicate.
 func (r RowValue) In(v any) Predicate { return In(r, v) }
 
-// NotIn returns an 'rowvalue NOT IN (value)' Predicate.
+// NotIn returns a 'rowvalue NOT IN (value)' Predicate.
 func (r RowValue) NotIn(v any) Predicate { return NotIn(r, v) }
 
 // Eq returns an 'rowvalue = value' Predicate.
@@ -530,9 +530,9 @@ func ToSQLContext(ctx context.Context, dialect string, w SQLWriter, params map[s
 			dialect = q.GetDialect()
 		}
 	}
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	err = w.WriteSQL(ctx, dialect, buf, &args, params)
 	query = buf.String()
 	if err != nil {

@@ -15,7 +15,7 @@ import (
 	"github.com/blink-io/sq/internal/pqarray"
 )
 
-var bufpool = &sync.Pool{
+var bufPool = &sync.Pool{
 	New: func() any { return &bytes.Buffer{} },
 }
 
@@ -215,6 +215,12 @@ func (ts TableStruct) WriteSQL(ctx context.Context, dialect string, buf *bytes.B
 	return nil
 }
 
+// GetSchema returns the schema name of the TableStruct.
+func (ts TableStruct) GetSchema() string { return ts.schema }
+
+// GetName returns the table name of the TableStruct.
+func (ts TableStruct) GetName() string { return ts.name }
+
 // GetAlias returns the alias of the TableStruct.
 func (ts TableStruct) GetAlias() string { return ts.alias }
 
@@ -239,9 +245,9 @@ func getAlias(w SQLWriter) string {
 }
 
 func toString(dialect string, w SQLWriter) string {
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	var args []any
 	_ = w.WriteSQL(context.Background(), dialect, buf, &args, nil)
 	return buf.String()

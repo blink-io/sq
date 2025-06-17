@@ -33,7 +33,7 @@ type AnyField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -50,7 +50,7 @@ func NewAnyField(name string, tbl TableStruct) AnyField {
 // WriteSQL implements the SQLWriter interface.
 func (field AnyField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -79,16 +79,16 @@ func (field AnyField) Desc() AnyField {
 // NullsLast returns a new NumberField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field AnyField) NullsLast() AnyField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new NumberField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field AnyField) NullsFirst() AnyField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -109,7 +109,7 @@ func (field AnyField) IsNotNull() Predicate { return Expr("{} IS NOT NULL", fiel
 // corresponds to the expression 'field IN (x, y, z)'.
 func (field AnyField) In(value any) Predicate { return In(field, value) }
 
-// In returns a 'field NOT IN (value)' Predicate. The value can be a slice, which
+// NotIn returns a 'field NOT IN (value)' Predicate. The value can be a slice, which
 // corresponds to the expression 'field NOT IN (x, y, z)'.
 func (field AnyField) NotIn(value any) Predicate { return NotIn(field, value) }
 
@@ -149,6 +149,9 @@ func (field AnyField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
 
+// GetName returns the name of the AnyField.
+func (field AnyField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the AnyField.
 func (field AnyField) GetAlias() string { return field.alias }
 
@@ -179,7 +182,7 @@ func (field AnyField) IsString() {}
 // IsTime implements the Time interface.
 func (field AnyField) IsTime() {}
 
-// IsUUIDType implements the UUID interface.
+// IsUUID implements the UUID interface.
 func (field AnyField) IsUUID() {}
 
 // ArrayField represents an SQL array field.
@@ -222,7 +225,7 @@ func (field ArrayField) WithPrefix(prefix string) Field {
 // IsNull returns a 'field IS NULL' Predicate.
 func (field ArrayField) IsNull() Predicate { return Expr("{} IS NULL", field) }
 
-// IsNull returns a 'field IS NOT NULL' Predicate.
+// IsNotNull returns a 'field IS NOT NULL' Predicate.
 func (field ArrayField) IsNotNull() Predicate { return Expr("{} IS NOT NULL", field) }
 
 // Set returns an Assignment assigning the value to the field.
@@ -247,6 +250,9 @@ func (field ArrayField) Setf(format string, values ...any) Assignment {
 	return Set(field, Expr(format, values...))
 }
 
+// GetName returns the name of the ArrayField.
+func (field ArrayField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the ArrayField.
 func (field ArrayField) GetAlias() string { return field.alias }
 
@@ -262,7 +268,7 @@ type BinaryField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -279,7 +285,7 @@ func NewBinaryField(fieldName string, tableName TableStruct) BinaryField {
 // WriteSQL implements the SQLWriter interface.
 func (field BinaryField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -308,16 +314,16 @@ func (field BinaryField) Desc() BinaryField {
 // NullsLast returns a new BinaryField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field BinaryField) NullsLast() BinaryField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new BinaryField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field BinaryField) NullsFirst() BinaryField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -359,6 +365,9 @@ func (field BinaryField) Setf(format string, values ...any) Assignment {
 // SetBytes returns an Assignment assigning a []byte to the field.
 func (field BinaryField) SetBytes(b []byte) Assignment { return Set(field, b) }
 
+// GetName returns the name of the BinaryField.
+func (field BinaryField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the BinaryField.
 func (field BinaryField) GetAlias() string { return field.alias }
 
@@ -374,7 +383,7 @@ type BooleanField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -392,7 +401,7 @@ func NewBooleanField(fieldName string, tableName TableStruct) BooleanField {
 // WriteSQL implements the SQLWriter interface.
 func (field BooleanField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -412,25 +421,25 @@ func (field BooleanField) Asc() BooleanField {
 
 // Desc returns a new BooleanField indicating that it should be ordered in
 // descending order i.e. 'ORDER BY field DESC'.
-func (f BooleanField) Desc() BooleanField {
-	f.desc.Valid = true
-	f.desc.Bool = true
-	return f
+func (field BooleanField) Desc() BooleanField {
+	field.desc.Valid = true
+	field.desc.Bool = true
+	return field
 }
 
 // NullsLast returns a new BooleanField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field BooleanField) NullsLast() BooleanField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new BooleanField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field BooleanField) NullsFirst() BooleanField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -473,6 +482,9 @@ func (field BooleanField) Setf(format string, values ...any) Assignment {
 // b'.
 func (field BooleanField) SetBool(b bool) Assignment { return Set(field, b) }
 
+// GetName returns the name of the BooleanField.
+func (field BooleanField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the BooleanField.
 func (field BooleanField) GetAlias() string { return field.alias }
 
@@ -499,6 +511,8 @@ var _ interface {
 func NewEnumField(name string, tbl TableStruct) EnumField {
 	return EnumField{table: tbl, name: name}
 }
+
+func (field EnumField) GetName() string { return field.name }
 
 // WriteSQL implements the SQLWriter interface.
 func (field EnumField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
@@ -626,8 +640,9 @@ func (field JSONField) Set(value any) Assignment {
 	switch reflect.TypeOf(value).Kind() {
 	case reflect.Map, reflect.Struct, reflect.Slice, reflect.Array:
 		return Set(field, JSONValue(value))
+	default:
+		return Set(field, value)
 	}
-	return Set(field, value)
 }
 
 // SetJSON returns an Assignment assigning the value to the field. It wraps the
@@ -640,6 +655,9 @@ func (field JSONField) SetJSON(value any) Assignment {
 func (field JSONField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
+
+// GetName returns the name of the JSONField.
+func (field JSONField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the JSONField.
 func (field JSONField) GetAlias() string { return field.alias }
@@ -662,7 +680,7 @@ type NumberField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -679,7 +697,7 @@ func NewNumberField(name string, tbl TableStruct) NumberField {
 // WriteSQL implements the SQLWriter interface.
 func (field NumberField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -708,16 +726,16 @@ func (field NumberField) Desc() NumberField {
 // NullsLast returns a new NumberField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field NumberField) NullsLast() NumberField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new NumberField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field NumberField) NullsFirst() NumberField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -824,14 +842,17 @@ func (field NumberField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
 
-// SetBytes returns an Assignment assigning an int to the field.
+// SetInt returns an Assignment assigning an int to the field.
 func (field NumberField) SetInt(num int) Assignment { return Set(field, num) }
 
-// SetBytes returns an Assignment assigning an int64 to the field.
+// SetInt64 returns an Assignment assigning an int64 to the field.
 func (field NumberField) SetInt64(num int64) Assignment { return Set(field, num) }
 
-// SetBytes returns an Assignment assigning an float64 to the field.
+// SetFloat64 returns an Assignment assigning an float64 to the field.
 func (field NumberField) SetFloat64(num float64) Assignment { return Set(field, num) }
+
+// GetName returns the name of the NumberField.
+func (field NumberField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the NumberField.
 func (field NumberField) GetAlias() string { return field.alias }
@@ -849,7 +870,7 @@ type StringField struct {
 	alias      string
 	collation  string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -874,7 +895,7 @@ func (field StringField) WriteSQL(ctx context.Context, dialect string, buf *byte
 			buf.WriteString(QuoteIdentifier(dialect, field.collation))
 		}
 	}
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -909,16 +930,16 @@ func (field StringField) Desc() StringField {
 // NullsLast returns a new StringField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field StringField) NullsLast() StringField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new StringField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field StringField) NullsFirst() StringField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -939,7 +960,7 @@ func (field StringField) IsNotNull() Predicate { return Expr("{} IS NOT NULL", f
 // corresponds to the expression 'field IN (x, y, z)'.
 func (field StringField) In(value any) Predicate { return In(field, value) }
 
-// In returns a 'field NOT IN (value)' Predicate. The value can be a slice,
+// NotIn returns a 'field NOT IN (value)' Predicate. The value can be a slice,
 // which corresponds to the expression 'field NOT IN (x, y, z)'.
 func (field StringField) NotIn(value any) Predicate { return NotIn(field, value) }
 
@@ -1012,6 +1033,9 @@ func (field StringField) Setf(format string, values ...any) Assignment {
 // SetString returns an Assignment assigning a string to the field.
 func (field StringField) SetString(str string) Assignment { return Set(field, str) }
 
+// GetName returns the name of the StringField.
+func (field StringField) GetName() string { return field.name }
+
 // GetAlias returns the alias of the StringField.
 func (field StringField) GetAlias() string { return field.alias }
 
@@ -1027,7 +1051,7 @@ type TimeField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -1044,7 +1068,7 @@ func NewTimeField(name string, tbl TableStruct) TimeField {
 // WriteSQL implements the SQLWriter interface.
 func (field TimeField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -1073,16 +1097,16 @@ func (field TimeField) Desc() TimeField {
 // NullsLast returns a new TimeField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field TimeField) NullsLast() TimeField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new TimeField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field TimeField) NullsFirst() TimeField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -1155,6 +1179,9 @@ func (field TimeField) Setf(format string, values ...any) Assignment {
 
 // SetTime returns an Assignment assigning a time.Time to the field.
 func (field TimeField) SetTime(t time.Time) Assignment { return Set(field, t) }
+
+// GetName returns the name of the TimeField.
+func (field TimeField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the TimeField.
 func (field TimeField) GetAlias() string { return field.alias }
@@ -1237,7 +1264,7 @@ func (ts *Timestamp) Scan(value any) error {
 		// Assume a millisecond unix timestamp if it's 13 digits -- too
 		// large to be a reasonable timestamp in seconds.
 		if value > 1e12 || value < -1e12 {
-			value *= int64(time.Millisecond) // convert ms to nsec
+			value *= int64(time.Millisecond) // convert ms to ns
 			ts.Time = time.Unix(0, value)
 		} else {
 			ts.Time = time.Unix(value, 0)
@@ -1275,12 +1302,12 @@ func (ts *Timestamp) Scan(value any) error {
 		}
 		return fmt.Errorf("could not convert %q into time", value)
 	default:
-		var nulltime sql.NullTime
-		err := nulltime.Scan(value)
+		var nullTime sql.NullTime
+		err := nullTime.Scan(value)
 		if err != nil {
 			return err
 		}
-		ts.Time, ts.Valid = nulltime.Time, nulltime.Valid
+		ts.Time, ts.Valid = nullTime.Time, nullTime.Valid
 		return nil
 	}
 }
@@ -1310,7 +1337,7 @@ type UUIDField struct {
 	name       string
 	alias      string
 	desc       sql.NullBool
-	nullsfirst sql.NullBool
+	nullsFirst sql.NullBool
 }
 
 var _ interface {
@@ -1327,7 +1354,7 @@ func NewUUIDField(name string, tbl TableStruct) UUIDField {
 // WriteSQL implements the SQLWriter interface.
 func (field UUIDField) WriteSQL(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int) error {
 	writeFieldIdentifier(ctx, dialect, buf, args, params, field.table, field.name)
-	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsfirst)
+	writeFieldOrder(ctx, dialect, buf, args, params, field.desc, field.nullsFirst)
 	return nil
 }
 
@@ -1356,16 +1383,16 @@ func (field UUIDField) Desc() UUIDField {
 // NullsLast returns a new UUIDField indicating that it should be ordered
 // with nulls last i.e. 'ORDER BY field NULLS LAST'.
 func (field UUIDField) NullsLast() UUIDField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = false
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = false
 	return field
 }
 
 // NullsFirst returns a new UUIDField indicating that it should be ordered
 // with nulls first i.e. 'ORDER BY field NULLS FIRST'.
 func (field UUIDField) NullsFirst() UUIDField {
-	field.nullsfirst.Valid = true
-	field.nullsfirst.Bool = true
+	field.nullsFirst.Valid = true
+	field.nullsFirst.Bool = true
 	return field
 }
 
@@ -1415,10 +1442,13 @@ func (field UUIDField) SetUUID(value any) Assignment {
 	return Set(field, UUIDValue(value))
 }
 
-// Set returns an Assignment assigning the value to the field.
+// Setf returns an Assignment assigning the value to the field.
 func (field UUIDField) Setf(format string, values ...any) Assignment {
 	return Setf(field, format, values...)
 }
+
+// GetName returns the name of the UUIDField.
+func (field UUIDField) GetName() string { return field.name }
 
 // GetAlias returns the alias of the UUIDField.
 func (field UUIDField) GetAlias() string { return field.alias }
@@ -1433,8 +1463,8 @@ func (field UUIDField) IsUUID() {}
 // empty string is equivalent to giving no alias to the table.
 func New[T Table](alias string) T {
 	var tbl T
-	ptrvalue := reflect.ValueOf(&tbl)
-	value := reflect.Indirect(ptrvalue)
+	ptrVal := reflect.ValueOf(&tbl)
+	value := reflect.Indirect(ptrVal)
 	typ := value.Type()
 	if typ.Kind() != reflect.Struct {
 		return tbl
@@ -1442,19 +1472,19 @@ func New[T Table](alias string) T {
 	if value.NumField() == 0 {
 		return tbl
 	}
-	firstfield := value.Field(0)
-	firstfieldType := typ.Field(0)
-	if !firstfield.CanInterface() {
+	firstField := value.Field(0)
+	firstFieldType := typ.Field(0)
+	if !firstField.CanInterface() {
 		return tbl
 	}
-	_, ok := firstfield.Interface().(TableStruct)
+	_, ok := firstField.Interface().(TableStruct)
 	if !ok {
 		return tbl
 	}
-	if !firstfield.CanSet() {
+	if !firstField.CanSet() {
 		return tbl
 	}
-	tag := firstfieldType.Tag.Get("sq")
+	tag := firstFieldType.Tag.Get("sq")
 	tableSchema, tableName, ok := strings.Cut(tag, ".")
 	if !ok {
 		tableSchema, tableName = "", tableSchema
@@ -1463,7 +1493,7 @@ func New[T Table](alias string) T {
 		tableName = strings.ToLower(typ.Name())
 	}
 	tableStruct := NewTableStruct(tableSchema, tableName, alias)
-	firstfield.Set(reflect.ValueOf(tableStruct))
+	firstField.Set(reflect.ValueOf(tableStruct))
 	for i := 1; i < value.NumField(); i++ {
 		v := value.Field(i)
 		if !v.CanInterface() {
@@ -1515,7 +1545,7 @@ func writeFieldIdentifier(ctx context.Context, dialect string, buf *bytes.Buffer
 	buf.WriteString(QuoteIdentifier(dialect, fieldName))
 }
 
-func writeFieldOrder(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int, desc, nullsfirst sql.NullBool) {
+func writeFieldOrder(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int, desc, nullsFirst sql.NullBool) {
 	if desc.Valid {
 		if desc.Bool {
 			buf.WriteString(" DESC")
@@ -1523,8 +1553,8 @@ func writeFieldOrder(ctx context.Context, dialect string, buf *bytes.Buffer, arg
 			buf.WriteString(" ASC")
 		}
 	}
-	if nullsfirst.Valid {
-		if nullsfirst.Bool {
+	if nullsFirst.Valid {
+		if nullsFirst.Bool {
 			buf.WriteString(" NULLS FIRST")
 		} else {
 			buf.WriteString(" NULLS LAST")

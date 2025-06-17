@@ -137,18 +137,18 @@ func TestVariadicPredicate(t *testing.T) {
 	t.Run("multiple predicates", func(t *testing.T) {
 		t.Parallel()
 		var tt TestTable
-		user_id, name, age := Expr("user_id"), Expr("name"), Expr("age")
+		userID, name, age := Expr("user_id"), Expr("name"), Expr("age")
 		tt.item = Or(
 			Expr("{} IS NULL", name),
 			cmp("=", age, age),
 			And(cmp("=", age, age)),
 			And(
-				cmp("=", user_id, 1),
-				cmp("<>", user_id, 2),
-				cmp("<", user_id, 3),
-				cmp("<=", user_id, 4),
-				cmp(">", user_id, 5),
-				cmp(">=", user_id, 6),
+				cmp("=", userID, 1),
+				cmp("<>", userID, 2),
+				cmp("<", userID, 3),
+				cmp("<=", userID, 4),
+				cmp(">", userID, 5),
+				cmp(">=", userID, 6),
 			),
 		)
 		tt.wantQuery = "(name IS NULL" +

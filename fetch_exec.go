@@ -81,9 +81,9 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(
 	}
 
 	// Build query.
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	err = query.WriteSQL(ctx, dialect, buf, &cursor.queryStats.Args, cursor.queryStats.Params)
 	cursor.queryStats.Query = buf.String()
 	if err != nil {
@@ -147,7 +147,7 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(
 
 	// Allocate the resultsBuffer.
 	if cursor.logSettings.IncludeResults > 0 {
-		cursor.resultsBuffer = bufpool.Get().(*bytes.Buffer)
+		cursor.resultsBuffer = bufPool.Get().(*bytes.Buffer)
 		cursor.resultsBuffer.Reset()
 	}
 	return cursor, nil
@@ -208,7 +208,7 @@ func (cursor *Cursor[T]) log() {
 	}
 	if cursor.resultsBuffer != nil {
 		cursor.queryStats.Results = cursor.resultsBuffer.String()
-		bufpool.Put(cursor.resultsBuffer)
+		bufPool.Put(cursor.resultsBuffer)
 	}
 	if cursor.logger == nil {
 		return
@@ -282,7 +282,7 @@ type CompiledFetch[T any] struct {
 	params    map[string][]int
 	rowmapper func(*Row) T
 	// if queryIsStatic is true, the rowmapper doesn't actually know what
-	// columns are in the query and it must be determined at runtime after
+	// columns are in the query, and it must be determined at runtime after
 	// running the query.
 	queryIsStatic bool
 }
@@ -340,9 +340,9 @@ func CompileFetchContext[T any](ctx context.Context, query Query, rowmapper func
 	}
 
 	// Build query.
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	err = query.WriteSQL(ctx, dialect, buf, &compiledFetch.args, compiledFetch.params)
 	compiledFetch.query = buf.String()
 	if err != nil {
@@ -449,7 +449,7 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 
 	// Allocate the resultsBuffer.
 	if cursor.logSettings.IncludeResults > 0 {
-		cursor.resultsBuffer = bufpool.Get().(*bytes.Buffer)
+		cursor.resultsBuffer = bufPool.Get().(*bytes.Buffer)
 		cursor.resultsBuffer.Reset()
 	}
 	return cursor, nil
@@ -653,7 +653,7 @@ func (preparedFetch *PreparedFetch[T]) fetchCursor(ctx context.Context, params P
 
 	// Allocate the resultsBuffer.
 	if cursor.logSettings.IncludeResults > 0 {
-		cursor.resultsBuffer = bufpool.Get().(*bytes.Buffer)
+		cursor.resultsBuffer = bufPool.Get().(*bytes.Buffer)
 		cursor.resultsBuffer.Reset()
 	}
 	return cursor, nil
@@ -746,9 +746,9 @@ func exec(ctx context.Context, db DB, query Query, skip int) (result Result, err
 	}
 
 	// Build query.
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	err = query.WriteSQL(ctx, dialect, buf, &queryStats.Args, queryStats.Params)
 	queryStats.Query = buf.String()
 	if err != nil {
@@ -839,9 +839,9 @@ func CompileExecContext(ctx context.Context, query Query) (*CompiledExec, error)
 	}
 
 	// Build query.
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	err := query.WriteSQL(ctx, dialect, buf, &compiledExec.args, compiledExec.params)
 	compiledExec.query = buf.String()
 	if err != nil {
@@ -965,7 +965,7 @@ func (compiledExec *CompiledExec) PrepareContext(ctx context.Context, db DB) (*P
 	return preparedExec, nil
 }
 
-// PrepareExec is the result of preparing a CompiledExec on a DB.
+// PreparedExec is the result of preparing a CompiledExec on a DB.
 type PreparedExec struct {
 	compiledExec *CompiledExec
 	stmt         *sql.Stmt
@@ -1055,9 +1055,9 @@ func getFieldNames(ctx context.Context, row *Row) []string {
 		columns, _ := row.sqlRows.Columns()
 		return columns
 	}
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	var args []any
 	fieldNames := make([]string, 0, len(row.fields))
 	for _, field := range row.fields {
@@ -1180,9 +1180,9 @@ func fetchExists(ctx context.Context, db DB, query Query, skip int) (exists bool
 	}
 
 	// Build query.
-	buf := bufpool.Get().(*bytes.Buffer)
+	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	defer bufpool.Put(buf)
+	defer bufPool.Put(buf)
 	if dialect == DialectSQLServer {
 		query = Queryf("SELECT CASE WHEN EXISTS ({}) THEN 1 ELSE 0 END", query)
 	} else {

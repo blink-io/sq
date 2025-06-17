@@ -440,7 +440,7 @@ func (q PostgresInsertQuery) OnConflict(fields ...Field) postgresInsertConflict 
 	return postgresInsertConflict{q: &q}
 }
 
-// OnConflict starts the ON CONFLICT clause of the PostgresInsertQuery.
+// OnConflictOnConstraint starts the ON CONFLICT clause of the PostgresInsertQuery.
 func (q PostgresInsertQuery) OnConflictOnConstraint(constraintName string) postgresInsertConflict {
 	q.Conflict.ConstraintName = constraintName
 	return postgresInsertConflict{q: &q}
@@ -515,7 +515,7 @@ func (b mysqlQueryBuilder) InsertInto(table Table) MySQLInsertQuery {
 	}
 }
 
-// InsertInto creates a new MySQLInsertQuery.
+// InsertIgnoreInto creates a new MySQLInsertQuery.
 func (b mysqlQueryBuilder) InsertIgnoreInto(table Table) MySQLInsertQuery {
 	return MySQLInsertQuery{
 		Dialect:      DialectMySQL,

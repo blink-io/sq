@@ -30,7 +30,7 @@ func TestLogger(t *testing.T) {
 			logger: log.New(buf, "", 0),
 			config: tt.config,
 		}
-		logger.SqLogQuery(tt.ctx, tt.stats)
+		logger.LogQuery(tt.ctx, tt.stats)
 		if diff := testutil.Diff(buf.String(), tt.wantOutput); diff != "" {
 			t.Error(testutil.Callers(), diff)
 		}
@@ -39,7 +39,7 @@ func TestLogger(t *testing.T) {
 	t.Run("Log VerboseLog", func(t *testing.T) {
 		t.Parallel()
 		var logSettings LogSettings
-		Log(nil).SqLogSettings(context.Background(), &logSettings)
+		Log(nil).LogSettings(context.Background(), &logSettings)
 		diff := testutil.Diff(logSettings, LogSettings{
 			LogAsynchronously: false,
 			IncludeTime:       true,
@@ -49,7 +49,7 @@ func TestLogger(t *testing.T) {
 		if diff != "" {
 			t.Error(testutil.Callers(), diff)
 		}
-		VerboseLog(nil).SqLogSettings(context.Background(), &logSettings)
+		VerboseLog(nil).LogSettings(context.Background(), &logSettings)
 		diff = testutil.Diff(logSettings, LogSettings{
 			LogAsynchronously: false,
 			IncludeTime:       true,

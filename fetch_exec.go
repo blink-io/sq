@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// Default dialect used by all queries (if no dialect is explicitly provided).
+// DefaultDialect is used by all queries (if no dialect is explicitly provided).
 var DefaultDialect atomic.Pointer[string]
 
 // A Cursor represents a database cursor.
@@ -23,7 +23,7 @@ type Cursor[T any] struct {
 	rowmapper     func(*Row) T
 	queryStats    QueryStats
 	logSettings   LogSettings
-	logger        SqLogger
+	logger        Logger
 	logged        int32
 	fieldNames    []string
 	resultsBuffer *bytes.Buffer
@@ -91,7 +91,7 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(
 	}
 
 	// Setup logger.
-	cursor.logger, _ = db.(SqLogger)
+	cursor.logger, _ = db.(Logger)
 	if cursor.logger == nil {
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
@@ -103,7 +103,7 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(
 		}
 	}
 	if cursor.logger != nil {
-		cursor.logger.SqLogSettings(ctx, &cursor.logSettings)
+		cursor.logger.LogSettings(ctx, &cursor.logSettings)
 		if cursor.logSettings.IncludeCaller {
 			cursor.queryStats.CallerFile, cursor.queryStats.CallerLine, cursor.queryStats.CallerFunction = caller(skip + 1)
 		}
@@ -214,9 +214,9 @@ func (cursor *Cursor[T]) log() {
 		return
 	}
 	if cursor.logSettings.LogAsynchronously {
-		go cursor.logger.SqLogQuery(cursor.ctx, cursor.queryStats)
+		go cursor.logger.LogQuery(cursor.ctx, cursor.queryStats)
 	} else {
-		cursor.logger.SqLogQuery(cursor.ctx, cursor.queryStats)
+		cursor.logger.LogQuery(cursor.ctx, cursor.queryStats)
 	}
 }
 
@@ -394,7 +394,7 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 
 	// Setup logger.
 	cursor.queryStats.RowCount.Valid = true
-	cursor.logger, _ = db.(SqLogger)
+	cursor.logger, _ = db.(Logger)
 	if cursor.logger == nil {
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
@@ -406,7 +406,7 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 		}
 	}
 	if cursor.logger != nil {
-		cursor.logger.SqLogSettings(ctx, &cursor.logSettings)
+		cursor.logger.LogSettings(ctx, &cursor.logSettings)
 		if cursor.logSettings.IncludeCaller {
 			cursor.queryStats.CallerFile, cursor.queryStats.CallerLine, cursor.queryStats.CallerFunction = caller(skip + 1)
 		}
@@ -533,7 +533,7 @@ func (compiledFetch *CompiledFetch[T]) PrepareContext(ctx context.Context, db DB
 	if err != nil {
 		return nil, err
 	}
-	preparedFetch.logger, _ = db.(SqLogger)
+	preparedFetch.logger, _ = db.(Logger)
 	if preparedFetch.logger == nil {
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
@@ -551,7 +551,7 @@ func (compiledFetch *CompiledFetch[T]) PrepareContext(ctx context.Context, db DB
 type PreparedFetch[T any] struct {
 	compiledFetch *CompiledFetch[T]
 	stmt          *sql.Stmt
-	logger        SqLogger
+	logger        Logger
 }
 
 // PrepareFetch returns a new PreparedFetch.
@@ -610,7 +610,7 @@ func (preparedFetch *PreparedFetch[T]) fetchCursor(ctx context.Context, params P
 
 	// Setup logger.
 	if cursor.logger != nil {
-		cursor.logger.SqLogSettings(ctx, &cursor.logSettings)
+		cursor.logger.LogSettings(ctx, &cursor.logSettings)
 		if cursor.logSettings.IncludeCaller {
 			cursor.queryStats.CallerFile, cursor.queryStats.CallerLine, cursor.queryStats.CallerFunction = caller(skip + 1)
 		}
@@ -757,7 +757,7 @@ func exec(ctx context.Context, db DB, query Query, skip int) (result Result, err
 
 	// Setup logger.
 	var logSettings LogSettings
-	logger, _ := db.(SqLogger)
+	logger, _ := db.(Logger)
 	if logger == nil {
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
@@ -769,15 +769,15 @@ func exec(ctx context.Context, db DB, query Query, skip int) (result Result, err
 		}
 	}
 	if logger != nil {
-		logger.SqLogSettings(ctx, &logSettings)
+		logger.LogSettings(ctx, &logSettings)
 		if logSettings.IncludeCaller {
 			queryStats.CallerFile, queryStats.CallerLine, queryStats.CallerFunction = caller(skip + 1)
 		}
 		defer func() {
 			if logSettings.LogAsynchronously {
-				go logger.SqLogQuery(ctx, queryStats)
+				go logger.LogQuery(ctx, queryStats)
 			} else {
-				logger.SqLogQuery(ctx, queryStats)
+				logger.LogQuery(ctx, queryStats)
 			}
 		}()
 	}
@@ -873,7 +873,7 @@ func (compiledExec *CompiledExec) exec(ctx context.Context, db DB, params Params
 
 	// Setup logger.
 	var logSettings LogSettings
-	logger, _ := db.(SqLogger)
+	logger, _ := db.(Logger)
 	if logger == nil {
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
@@ -885,15 +885,15 @@ func (compiledExec *CompiledExec) exec(ctx context.Context, db DB, params Params
 		}
 	}
 	if logger != nil {
-		logger.SqLogSettings(ctx, &logSettings)
+		logger.LogSettings(ctx, &logSettings)
 		if logSettings.IncludeCaller {
 			queryStats.CallerFile, queryStats.CallerLine, queryStats.CallerFunction = caller(skip + 1)
 		}
 		defer func() {
 			if logSettings.LogAsynchronously {
-				go logger.SqLogQuery(ctx, queryStats)
+				go logger.LogQuery(ctx, queryStats)
 			} else {
-				logger.SqLogQuery(ctx, queryStats)
+				logger.LogQuery(ctx, queryStats)
 			}
 		}()
 	}
@@ -951,7 +951,7 @@ func (compiledExec *CompiledExec) PrepareContext(ctx context.Context, db DB) (*P
 	if err != nil {
 		return nil, err
 	}
-	preparedExec.logger, _ = db.(SqLogger)
+	preparedExec.logger, _ = db.(Logger)
 	if preparedExec.logger == nil {
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
@@ -969,7 +969,7 @@ func (compiledExec *CompiledExec) PrepareContext(ctx context.Context, db DB) (*P
 type PreparedExec struct {
 	compiledExec *CompiledExec
 	stmt         *sql.Stmt
-	logger       SqLogger
+	logger       Logger
 }
 
 // PrepareExec returns a new PreparedExec.
@@ -1016,15 +1016,15 @@ func (preparedExec *PreparedExec) exec(ctx context.Context, params Params, skip 
 	// Setup logger.
 	var logSettings LogSettings
 	if preparedExec.logger != nil {
-		preparedExec.logger.SqLogSettings(ctx, &logSettings)
+		preparedExec.logger.LogSettings(ctx, &logSettings)
 		if logSettings.IncludeCaller {
 			queryStats.CallerFile, queryStats.CallerLine, queryStats.CallerFunction = caller(skip + 1)
 		}
 		defer func() {
 			if logSettings.LogAsynchronously {
-				go preparedExec.logger.SqLogQuery(ctx, queryStats)
+				go preparedExec.logger.LogQuery(ctx, queryStats)
 			} else {
-				preparedExec.logger.SqLogQuery(ctx, queryStats)
+				preparedExec.logger.LogQuery(ctx, queryStats)
 			}
 		}()
 	}
@@ -1196,7 +1196,7 @@ func fetchExists(ctx context.Context, db DB, query Query, skip int) (exists bool
 
 	// Setup logger.
 	var logSettings LogSettings
-	logger, _ := db.(SqLogger)
+	logger, _ := db.(Logger)
 	if logger == nil {
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
@@ -1208,15 +1208,15 @@ func fetchExists(ctx context.Context, db DB, query Query, skip int) (exists bool
 		}
 	}
 	if logger != nil {
-		logger.SqLogSettings(ctx, &logSettings)
+		logger.LogSettings(ctx, &logSettings)
 		if logSettings.IncludeCaller {
 			queryStats.CallerFile, queryStats.CallerLine, queryStats.CallerFunction = caller(skip + 1)
 		}
 		defer func() {
 			if logSettings.LogAsynchronously {
-				go logger.SqLogQuery(ctx, queryStats)
+				go logger.LogQuery(ctx, queryStats)
 			} else {
-				logger.SqLogQuery(ctx, queryStats)
+				logger.LogQuery(ctx, queryStats)
 			}
 		}()
 	}

@@ -30,7 +30,7 @@ type Row struct {
 	columnIndex   map[string]int
 }
 
-// Column returns the names of the columns returned by the query. This method
+// Columns returns the names of the columns returned by the query. This method
 // can only be called in a rowmapper if it is paired with a raw SQL query e.g.
 // Queryf("SELECT * FROM my_table"). Otherwise, an error will be returned.
 func (row *Row) Columns() []string {
@@ -557,6 +557,7 @@ func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
 		destValue.SetUint(uint64(enumIndex))
 	case reflect.String:
 		destValue.SetString(scanDest.String)
+	default:
 	}
 }
 
@@ -864,7 +865,7 @@ func (row *Row) String(format string, values ...any) string {
 	return row.NullStringField(Expr(format, values...)).String
 }
 
-// String returns the string value of the field.
+// StringField returns the string value of the field.
 func (row *Row) StringField(field String) string {
 	if row.queryIsStatic {
 		panic(fmt.Errorf(callsite(1) + "cannot call StringField for static queries"))
@@ -969,7 +970,7 @@ func (row *Row) Time(format string, values ...any) time.Time {
 	return row.NullTimeField(Expr(format, values...)).Time
 }
 
-// Time returns the time.Time value of the field.
+// TimeField returns the time.Time value of the field.
 func (row *Row) TimeField(field Time) time.Time {
 	if row.queryIsStatic {
 		panic(fmt.Errorf(callsite(1) + "cannot call TimeField for static queries"))
@@ -1198,7 +1199,7 @@ const (
 // nullBytes is used in place of scanning into *[]byte. We use *nullBytes
 // instead of *[]byte because of the displayType field, which determines how to
 // render the value to the user. This is important for logging the query
-// results, because UUIDs/JSON/Arrays are all scanned into bytes but we don't
+// results, because UUIDs/JSON/Arrays are all scanned into bytes, but we don't
 // want to display them as bytes (we need to convert them to UUID/JSON/Array
 // strings instead).
 type nullBytes struct {

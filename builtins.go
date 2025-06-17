@@ -422,7 +422,7 @@ func (r RowValue) In(v any) Predicate { return In(r, v) }
 // NotIn returns a 'rowvalue NOT IN (value)' Predicate.
 func (r RowValue) NotIn(v any) Predicate { return NotIn(r, v) }
 
-// Eq returns an 'rowvalue = value' Predicate.
+// Eq returns a 'rowvalue = value' Predicate.
 func (r RowValue) Eq(v any) Predicate { return cmp("=", r, v) }
 
 // RowValues represents a list of RowValues e.g. (x, y, z), (a, b, c).

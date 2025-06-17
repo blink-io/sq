@@ -848,7 +848,7 @@ func (field NumberField) SetInt(num int) Assignment { return Set(field, num) }
 // SetInt64 returns an Assignment assigning an int64 to the field.
 func (field NumberField) SetInt64(num int64) Assignment { return Set(field, num) }
 
-// SetFloat64 returns an Assignment assigning an float64 to the field.
+// SetFloat64 returns an Assignment assigning a float64 to the field.
 func (field NumberField) SetFloat64(num float64) Assignment { return Set(field, num) }
 
 // GetName returns the name of the NumberField.

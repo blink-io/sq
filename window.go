@@ -44,7 +44,7 @@ func PartitionBy(fields ...Field) WindowDefinition {
 	return WindowDefinition{PartitionByFields: fields}
 }
 
-// PartitionBy returns a new WindowDefinition with the ORDER BY clause.
+// OrderBy returns a new WindowDefinition with the ORDER BY clause.
 func OrderBy(fields ...Field) WindowDefinition {
 	return WindowDefinition{OrderByFields: fields}
 }

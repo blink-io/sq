@@ -80,14 +80,14 @@ type LogSettings struct {
 	IncludeResults int
 }
 
-// SqLogger represents a logger for the sq package.
-type SqLogger interface {
-	// SqLogSettings should populate a LogSettings struct, which influences
+// Logger represents a logger for the sq package.
+type Logger interface {
+	// LogSettings should populate a LogSettings struct, which influences
 	// what is added into the QueryStats.
-	SqLogSettings(context.Context, *LogSettings)
+	LogSettings(context.Context, *LogSettings)
 
-	// SqLogQuery logs a query when for the given QueryStats.
-	SqLogQuery(context.Context, QueryStats)
+	// LogQuery logs a query when for the given QueryStats.
+	LogQuery(context.Context, QueryStats)
 }
 
 type sqLogger struct {
@@ -95,7 +95,7 @@ type sqLogger struct {
 	config LoggerConfig
 }
 
-// LoggerConfig is the config used for the sq logger.
+// LoggerConfig is the config used for logger.
 type LoggerConfig struct {
 	// Dispatch logging asynchronously (logs may arrive out of order which can be confusing, but it won't block function calls).
 	LogAsynchronously bool
@@ -124,7 +124,7 @@ type LoggerConfig struct {
 	HideArgs bool
 }
 
-var _ SqLogger = (*sqLogger)(nil)
+var _ Logger = (*sqLogger)(nil)
 
 var defaultLogger = NewLogger(os.Stdout, "", log.LstdFlags, LoggerConfig{
 	ShowTimeTaken: true,
@@ -138,24 +138,24 @@ var verboseLogger = NewLogger(os.Stdout, "", log.LstdFlags, LoggerConfig{
 	InterpolateVerbose: true,
 })
 
-// NewLogger returns a new SqLogger.
-func NewLogger(w io.Writer, prefix string, flag int, config LoggerConfig) SqLogger {
+// NewLogger returns a new Logger.
+func NewLogger(w io.Writer, prefix string, flag int, config LoggerConfig) Logger {
 	return &sqLogger{
 		logger: log.New(w, prefix, flag),
 		config: config,
 	}
 }
 
-// SqLogSettings implements the SqLogger interface.
-func (l *sqLogger) SqLogSettings(ctx context.Context, settings *LogSettings) {
+// LogSettings implements the Logger interface.
+func (l *sqLogger) LogSettings(ctx context.Context, settings *LogSettings) {
 	settings.LogAsynchronously = l.config.LogAsynchronously
 	settings.IncludeTime = l.config.ShowTimeTaken
 	settings.IncludeCaller = l.config.ShowCaller
 	settings.IncludeResults = l.config.ShowResults
 }
 
-// SqLogQuery implements the SqLogger interface.
-func (l *sqLogger) SqLogQuery(ctx context.Context, queryStats QueryStats) {
+// LogQuery implements the Logger interface.
+func (l *sqLogger) LogQuery(ctx context.Context, queryStats QueryStats) {
 	var reset, red, green, blue, purple string
 	envNoColor, _ := strconv.ParseBool(os.Getenv("NO_COLOR"))
 	if !l.config.NoColor && !envNoColor {
@@ -248,23 +248,23 @@ func (l *sqLogger) SqLogQuery(ctx context.Context, queryStats QueryStats) {
 // Log wraps a DB and adds logging to it.
 func Log(db DB) interface {
 	DB
-	SqLogger
+	Logger
 } {
 	return struct {
 		DB
-		SqLogger
-	}{DB: db, SqLogger: defaultLogger}
+		Logger
+	}{DB: db, Logger: defaultLogger}
 }
 
 // VerboseLog wraps a DB and adds verbose logging to it.
 func VerboseLog(db DB) interface {
 	DB
-	SqLogger
+	Logger
 } {
 	return struct {
 		DB
-		SqLogger
-	}{DB: db, SqLogger: verboseLogger}
+		Logger
+	}{DB: db, Logger: verboseLogger}
 }
 
 var defaultLogSettings atomic.Value
@@ -289,16 +289,16 @@ type sqLogStruct struct {
 	logQuery    func(context.Context, QueryStats)
 }
 
-var _ SqLogger = (*sqLogStruct)(nil)
+var _ Logger = (*sqLogStruct)(nil)
 
-func (l *sqLogStruct) SqLogSettings(ctx context.Context, logSettings *LogSettings) {
+func (l *sqLogStruct) LogSettings(ctx context.Context, logSettings *LogSettings) {
 	if l.logSettings == nil {
 		return
 	}
 	l.logSettings(ctx, logSettings)
 }
 
-func (l *sqLogStruct) SqLogQuery(ctx context.Context, queryStats QueryStats) {
+func (l *sqLogStruct) LogQuery(ctx context.Context, queryStats QueryStats) {
 	if l.logQuery == nil {
 		return
 	}

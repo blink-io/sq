@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bokwoon95/sq/internal/googleuuid"
-	"github.com/bokwoon95/sq/internal/pqarray"
+	"github.com/blink-io/sq/internal/googleuuid"
+	"github.com/blink-io/sq/internal/pqarray"
 )
 
 // Row represents the state of a row after a call to rows.Next().

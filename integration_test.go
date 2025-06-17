@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bokwoon95/sq/internal/testutil"
-	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/blink-io/sq/internal/testutil"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/microsoft/go-mssqldb"
 )
 
 type Color int
@@ -90,7 +91,7 @@ func TestRow(t *testing.T) {
 			"\n);",
 	}, {
 		dialect: DialectPostgres,
-		driver:  "postgres",
+		driver:  "pgx",
 		dsn:     *postgresDSN,
 		teardown: "DROP TABLE IF EXISTS table00;" +
 			"\nDROP TYPE IF EXISTS direction;" +

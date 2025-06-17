@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bokwoon95/sq/internal/testutil"
+	"github.com/blink-io/sq/internal/testutil"
 )
 
 func TestLogger(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/bokwoon95/sq/internal/testutil"
+	"github.com/blink-io/sq/internal/testutil"
 )
 
 func TestCTE(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bokwoon95/sq/internal/testutil"
+	"github.com/blink-io/sq/internal/testutil"
 )
 
 var (

@@ -138,6 +138,7 @@ func xtob(x1, x2 byte) (byte, bool) {
 	return (b1 << 4) | b2, b1 != 255 && b2 != 255
 }
 
+// EncodeHex executes like below:
 // var buf [36]byte; encodeHex(buf[:], [16]byte{...}); string(buf[:])
 func EncodeHex(dst []byte, uuid [16]byte) {
 	hex.Encode(dst[:], uuid[:4])

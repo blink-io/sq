@@ -239,7 +239,7 @@ func FetchOne[T any](db DB, query Query, rowmapper func(*Row) T) (T, error) {
 	if err != nil {
 		return *new(T), err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResult(cursor)
 }
 
@@ -249,7 +249,7 @@ func FetchOneContext[T any](ctx context.Context, db DB, query Query, rowmapper f
 	if err != nil {
 		return *new(T), err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResult(cursor)
 }
 
@@ -259,7 +259,7 @@ func FetchAll[T any](db DB, query Query, rowmapper func(*Row) T) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResults(cursor)
 }
 
@@ -269,7 +269,7 @@ func FetchAllContext[T any](ctx context.Context, db DB, query Query, rowmapper f
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResults(cursor)
 }
 
@@ -462,7 +462,7 @@ func (compiledFetch *CompiledFetch[T]) FetchOne(db DB, params Params) (T, error)
 	if err != nil {
 		return *new(T), err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResult(cursor)
 }
 
@@ -472,7 +472,7 @@ func (compiledFetch *CompiledFetch[T]) FetchOneContext(ctx context.Context, db D
 	if err != nil {
 		return *new(T), err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResult(cursor)
 }
 
@@ -483,7 +483,7 @@ func (compiledFetch *CompiledFetch[T]) FetchAll(db DB, params Params) ([]T, erro
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResults(cursor)
 }
 
@@ -493,7 +493,7 @@ func (compiledFetch *CompiledFetch[T]) FetchAllContext(ctx context.Context, db D
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResults(cursor)
 }
 
@@ -569,12 +569,12 @@ func PrepareFetchContext[T any](ctx context.Context, db DB, q Query, rowmapper f
 }
 
 // FetchCursor returns a new cursor.
-func (preparedFetch PreparedFetch[T]) FetchCursor(params Params) (*Cursor[T], error) {
+func (preparedFetch *PreparedFetch[T]) FetchCursor(params Params) (*Cursor[T], error) {
 	return preparedFetch.fetchCursor(context.Background(), params, 1)
 }
 
 // FetchCursorContext is like FetchCursor but additionally requires a context.Context.
-func (preparedFetch PreparedFetch[T]) FetchCursorContext(ctx context.Context, params Params) (*Cursor[T], error) {
+func (preparedFetch *PreparedFetch[T]) FetchCursorContext(ctx context.Context, params Params) (*Cursor[T], error) {
 	return preparedFetch.fetchCursor(ctx, params, 1)
 }
 
@@ -666,7 +666,7 @@ func (preparedFetch *PreparedFetch[T]) FetchOne(params Params) (T, error) {
 	if err != nil {
 		return *new(T), err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResult(cursor)
 }
 
@@ -676,7 +676,7 @@ func (preparedFetch *PreparedFetch[T]) FetchOneContext(ctx context.Context, para
 	if err != nil {
 		return *new(T), err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResult(cursor)
 }
 
@@ -687,7 +687,7 @@ func (preparedFetch *PreparedFetch[T]) FetchAll(params Params) ([]T, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResults(cursor)
 }
 
@@ -697,7 +697,7 @@ func (preparedFetch *PreparedFetch[T]) FetchAllContext(ctx context.Context, para
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close()
+	defer closeQuietly(cursor.Close)
 	return cursorResults(cursor)
 }
 

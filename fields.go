@@ -845,10 +845,10 @@ func (field NumberField) Setf(format string, values ...any) Assignment {
 // SetInt returns an Assignment assigning an int to the field.
 func (field NumberField) SetInt(num int) Assignment { return Set(field, num) }
 
-// SetInt64 returns an Assignment assigning an int64 to the field.
+// SetInt64 returns an Assignment assigning the int64 to the field.
 func (field NumberField) SetInt64(num int64) Assignment { return Set(field, num) }
 
-// SetFloat64 returns an Assignment assigning a float64 to the field.
+// SetFloat64 returns an Assignment assigning the float64 to the field.
 func (field NumberField) SetFloat64(num float64) Assignment { return Set(field, num) }
 
 // GetName returns the name of the NumberField.
@@ -1315,7 +1315,7 @@ func (ts *Timestamp) Scan(value any) error {
 // Value implements the driver.Valuer interface. It returns an int64 unix
 // timestamp if the dialect is SQLite, otherwise it returns a time.Time
 // (similar to sql.NullTime).
-func (ts Timestamp) Value() (driver.Value, error) {
+func (ts *Timestamp) Value() (driver.Value, error) {
 	if !ts.Valid {
 		return nil, nil
 	}
@@ -1326,7 +1326,7 @@ func (ts Timestamp) Value() (driver.Value, error) {
 }
 
 // DialectValuer implements the DialectValuer interface.
-func (ts Timestamp) DialectValuer(dialect string) (driver.Valuer, error) {
+func (ts *Timestamp) DialectValuer(dialect string) (driver.Valuer, error) {
 	ts.dialect = dialect
 	return ts, nil
 }

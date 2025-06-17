@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-// InsertQuery represents an SQL INSERT query.
+// InsertQuery represents the SQL INSERT query.
 type InsertQuery struct {
 	Dialect      string
 	ColumnMapper func(*Column)
@@ -331,7 +331,9 @@ func (q SQLiteInsertQuery) Select(query Query) SQLiteInsertQuery {
 	return q
 }
 
-type sqliteInsertConflict struct{ q *SQLiteInsertQuery }
+type sqliteInsertConflict struct {
+	q *SQLiteInsertQuery
+}
 
 // OnConflict starts the ON CONFLICT clause of the SQLiteInsertQuery.
 func (q SQLiteInsertQuery) OnConflict(fields ...Field) sqliteInsertConflict {

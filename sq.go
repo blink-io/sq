@@ -352,11 +352,11 @@ func (v *arrayValue) Value() (driver.Value, error) {
 		return strings.TrimSpace(b.String()), nil
 	}
 	if ints, ok := v.value.([]int); ok {
-		bigints := make([]int64, len(ints))
+		bigInts := make([]int64, len(ints))
 		for i, num := range ints {
-			bigints[i] = int64(num)
+			bigInts[i] = int64(num)
 		}
-		v.value = bigints
+		v.value = bigInts
 	}
 	return pqarray.Array(v.value).Value()
 }
@@ -455,7 +455,7 @@ func getEnumIndex(name string, names []string, typ reflect.Type) int {
 	return idx
 }
 
-// JSONValue takes in an interface{} and returns a driver.Valuer which runs the
+// JSONValue takes in an any and returns a driver.Valuer which runs the
 // value through json.Marshal before submitting it to the database.
 func JSONValue(value any) driver.Valuer {
 	return &jsonValue{value: value}

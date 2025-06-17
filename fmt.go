@@ -638,7 +638,7 @@ func expandSlice(ctx context.Context, dialect string, buf *bytes.Buffer, args *[
 	return nil
 }
 
-// writeNamedArg writes an sql.NamedArg into the Output.
+// writeNamedArg writes a sql.NamedArg into the Output.
 func writeNamedArg(ctx context.Context, dialect string, buf *bytes.Buffer, args *[]any, params map[string][]int, namedArg sql.NamedArg) error {
 	if w, ok := namedArg.Value.(SQLWriter); ok {
 		return w.WriteSQL(ctx, dialect, buf, args, params)
@@ -828,7 +828,7 @@ func quoteTableColumns(dialect string, table Table) string {
 	return b.String()
 }
 
-// Params is a shortcut for typing map[string]interface{}.
+// Params is a shortcut for typing map[string]any.
 type Params = map[string]any
 
 // Parameter is identical to sql.NamedArg, but implements the Field interface.
@@ -965,17 +965,17 @@ type NumberParameter sql.NamedArg
 
 var _ Number = (*NumberParameter)(nil)
 
-// IntParam creates a new NumberParameter from an int value.
+// IntParam creates a new NumberParameter from the int value.
 func IntParam(name string, num int) NumberParameter {
 	return NumberParameter{Name: name, Value: num}
 }
 
-// Int64Param creates a new NumberParameter from an int64 value.
+// Int64Param creates a new NumberParameter from the int64 value.
 func Int64Param(name string, num int64) NumberParameter {
 	return NumberParameter{Name: name, Value: num}
 }
 
-// Float64Param creates a new NumberParameter from an float64 value.
+// Float64Param creates a new NumberParameter from the float64 value.
 func Float64Param(name string, num float64) NumberParameter {
 	return NumberParameter{Name: name, Value: num}
 }

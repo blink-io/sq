@@ -7,12 +7,25 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
+)
+
+const (
+	colorReset  = "\x1b[0m"
+	colorRed    = "\x1b[91m"
+	colorGreen  = "\x1b[92m"
+	colorYellow = "\x1b[93m"
+	colorBlue   = "\x1b[94m"
+	colorPurple = "\x1b[95m"
+	colorCyan   = "\x1b[96m"
+	colorGray   = "\x1b[97m"
+	colorWhite  = "\x1b[97m"
 )
 
 // QueryStats represents the statistics from running a query.
@@ -90,7 +103,7 @@ type Logger interface {
 	LogQuery(context.Context, QueryStats)
 }
 
-type sqLogger struct {
+type logger struct {
 	logger *log.Logger
 	config LoggerConfig
 }
@@ -124,7 +137,7 @@ type LoggerConfig struct {
 	HideArgs bool
 }
 
-var _ Logger = (*sqLogger)(nil)
+var _ Logger = (*logger)(nil)
 
 var defaultLogger = NewLogger(os.Stdout, "", log.LstdFlags, LoggerConfig{
 	ShowTimeTaken: true,
@@ -140,14 +153,14 @@ var verboseLogger = NewLogger(os.Stdout, "", log.LstdFlags, LoggerConfig{
 
 // NewLogger returns a new Logger.
 func NewLogger(w io.Writer, prefix string, flag int, config LoggerConfig) Logger {
-	return &sqLogger{
+	return &logger{
 		logger: log.New(w, prefix, flag),
 		config: config,
 	}
 }
 
 // LogSettings implements the Logger interface.
-func (l *sqLogger) LogSettings(ctx context.Context, settings *LogSettings) {
+func (l *logger) LogSettings(ctx context.Context, settings *LogSettings) {
 	settings.LogAsynchronously = l.config.LogAsynchronously
 	settings.IncludeTime = l.config.ShowTimeTaken
 	settings.IncludeCaller = l.config.ShowCaller
@@ -155,7 +168,7 @@ func (l *sqLogger) LogSettings(ctx context.Context, settings *LogSettings) {
 }
 
 // LogQuery implements the Logger interface.
-func (l *sqLogger) LogQuery(ctx context.Context, queryStats QueryStats) {
+func (l *logger) LogQuery(ctx context.Context, queryStats QueryStats) {
 	var reset, red, green, blue, purple string
 	envNoColor, _ := strconv.ParseBool(os.Getenv("NO_COLOR"))
 	if !l.config.NoColor && !envNoColor {
@@ -284,35 +297,68 @@ func SetDefaultLogQuery(logQuery func(context.Context, QueryStats)) {
 	defaultLogQuery.Store(logQuery)
 }
 
-type sqLogStruct struct {
+type loggerStruct struct {
 	logSettings func(context.Context, *LogSettings)
 	logQuery    func(context.Context, QueryStats)
 }
 
-var _ Logger = (*sqLogStruct)(nil)
+var _ Logger = (*loggerStruct)(nil)
 
-func (l *sqLogStruct) LogSettings(ctx context.Context, logSettings *LogSettings) {
+func (l *loggerStruct) LogSettings(ctx context.Context, logSettings *LogSettings) {
 	if l.logSettings == nil {
 		return
 	}
 	l.logSettings(ctx, logSettings)
 }
 
-func (l *sqLogStruct) LogQuery(ctx context.Context, queryStats QueryStats) {
+func (l *loggerStruct) LogQuery(ctx context.Context, queryStats QueryStats) {
 	if l.logQuery == nil {
 		return
 	}
 	l.logQuery(ctx, queryStats)
 }
 
-const (
-	colorReset  = "\x1b[0m"
-	colorRed    = "\x1b[91m"
-	colorGreen  = "\x1b[92m"
-	colorYellow = "\x1b[93m"
-	colorBlue   = "\x1b[94m"
-	colorPurple = "\x1b[95m"
-	colorCyan   = "\x1b[96m"
-	colorGray   = "\x1b[97m"
-	colorWhite  = "\x1b[97m"
-)
+type slogger struct {
+	ctx context.Context
+	sl  *slog.Logger
+	lv  slog.Leveler
+	cfg LoggerConfig
+}
+
+var _ Logger = (*slogger)(nil)
+
+func NewSlogger(sl *slog.Logger, lv slog.Leveler, cfg LoggerConfig) Logger {
+	return &slogger{
+		ctx: context.Background(),
+		sl:  sl,
+		lv:  lv,
+		cfg: cfg,
+	}
+}
+
+func (l *slogger) LogSettings(ctx context.Context, settings *LogSettings) {
+	settings.LogAsynchronously = l.cfg.LogAsynchronously
+	settings.IncludeTime = l.cfg.ShowTimeTaken
+	settings.IncludeCaller = l.cfg.ShowCaller
+	settings.IncludeResults = l.cfg.ShowResults
+}
+
+func (l *slogger) LogQuery(ctx context.Context, stats QueryStats) {
+	attrs := []slog.Attr{
+		slog.String("dialect", stats.Dialect),
+		slog.String("query", stats.Query),
+		slog.Time("started_at", stats.StartedAt),
+		slog.String("results", stats.Results),
+	}
+	if l.cfg.ShowTimeTaken {
+		attrs = append(attrs, slog.Duration("time_taken", stats.TimeTaken))
+	}
+	if l.cfg.ShowCaller {
+		attrs = append(attrs,
+			slog.String("caller_file", stats.CallerFile),
+			slog.Int("caller_line", stats.CallerLine),
+			slog.String("caller_function", stats.CallerFunction),
+		)
+	}
+	l.sl.LogAttrs(l.ctx, l.lv.Level(), "Query stats", attrs...)
+}

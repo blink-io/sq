@@ -26,7 +26,7 @@ func TestLogger(t *testing.T) {
 			tt.ctx = context.Background()
 		}
 		buf := &bytes.Buffer{}
-		logger := sqLogger{
+		logger := logger{
 			logger: log.New(buf, "", 0),
 			config: tt.config,
 		}

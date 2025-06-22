@@ -96,7 +96,7 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
 			logSettings, _ := defaultLogSettings.Load().(func(context.Context, *LogSettings))
-			cursor.logger = &sqLogStruct{
+			cursor.logger = &loggerStruct{
 				logSettings: logSettings,
 				logQuery:    logQuery,
 			}
@@ -399,7 +399,7 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
 			logSettings, _ := defaultLogSettings.Load().(func(context.Context, *LogSettings))
-			cursor.logger = &sqLogStruct{
+			cursor.logger = &loggerStruct{
 				logSettings: logSettings,
 				logQuery:    logQuery,
 			}
@@ -538,7 +538,7 @@ func (compiledFetch *CompiledFetch[T]) PrepareContext(ctx context.Context, db DB
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
 			logSettings, _ := defaultLogSettings.Load().(func(context.Context, *LogSettings))
-			preparedFetch.logger = &sqLogStruct{
+			preparedFetch.logger = &loggerStruct{
 				logSettings: logSettings,
 				logQuery:    logQuery,
 			}
@@ -762,7 +762,7 @@ func exec(ctx context.Context, db DB, query Query, skip int) (result Result, err
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
 			logSettings, _ := defaultLogSettings.Load().(func(context.Context, *LogSettings))
-			logger = &sqLogStruct{
+			logger = &loggerStruct{
 				logSettings: logSettings,
 				logQuery:    logQuery,
 			}
@@ -878,7 +878,7 @@ func (compiledExec *CompiledExec) exec(ctx context.Context, db DB, params Params
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
 			logSettings, _ := defaultLogSettings.Load().(func(context.Context, *LogSettings))
-			logger = &sqLogStruct{
+			logger = &loggerStruct{
 				logSettings: logSettings,
 				logQuery:    logQuery,
 			}
@@ -956,7 +956,7 @@ func (compiledExec *CompiledExec) PrepareContext(ctx context.Context, db DB) (*P
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
 			logSettings, _ := defaultLogSettings.Load().(func(context.Context, *LogSettings))
-			preparedExec.logger = &sqLogStruct{
+			preparedExec.logger = &loggerStruct{
 				logSettings: logSettings,
 				logQuery:    logQuery,
 			}
@@ -1201,7 +1201,7 @@ func fetchExists(ctx context.Context, db DB, query Query, skip int) (exists bool
 		logQuery, _ := defaultLogQuery.Load().(func(context.Context, QueryStats))
 		if logQuery != nil {
 			logSettings, _ := defaultLogSettings.Load().(func(context.Context, *LogSettings))
-			logger = &sqLogStruct{
+			logger = &loggerStruct{
 				logSettings: logSettings,
 				logQuery:    logQuery,
 			}

@@ -16,11 +16,13 @@ import (
 // DefaultDialect is used by all queries (if no dialect is explicitly provided).
 var DefaultDialect atomic.Pointer[string]
 
+type RowMapper[T any] = func(*Row) T
+
 // A Cursor represents a database cursor.
 type Cursor[T any] struct {
 	ctx           context.Context
 	row           *Row
-	rowmapper     func(*Row) T
+	rowMapper     RowMapper[T]
 	queryStats    QueryStats
 	logSettings   LogSettings
 	logger        Logger
@@ -30,24 +32,24 @@ type Cursor[T any] struct {
 }
 
 // FetchCursor returns a new cursor.
-func FetchCursor[T any](db DB, query Query, rowmapper func(*Row) T) (*Cursor[T], error) {
-	return fetchCursor(context.Background(), db, query, rowmapper, 1)
+func FetchCursor[T any](db DB, query Query, rowMapper RowMapper[T]) (*Cursor[T], error) {
+	return fetchCursor[T](context.Background(), db, query, rowMapper, 1)
 }
 
 // FetchCursorContext is like FetchCursor but additionally requires a context.Context.
-func FetchCursorContext[T any](ctx context.Context, db DB, query Query, rowmapper func(*Row) T) (*Cursor[T], error) {
-	return fetchCursor(ctx, db, query, rowmapper, 1)
+func FetchCursorContext[T any](ctx context.Context, db DB, query Query, rowMapper RowMapper[T]) (*Cursor[T], error) {
+	return fetchCursor[T](ctx, db, query, rowMapper, 1)
 }
 
-func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(*Row) T, skip int) (cursor *Cursor[T], err error) {
+func fetchCursor[T any](ctx context.Context, db DB, query Query, rowMapper RowMapper[T], skip int) (cursor *Cursor[T], err error) {
 	if db == nil {
 		return nil, fmt.Errorf("db is nil")
 	}
 	if query == nil {
 		return nil, fmt.Errorf("query is nil")
 	}
-	if rowmapper == nil {
-		return nil, fmt.Errorf("rowmapper is nil")
+	if rowMapper == nil {
+		return nil, fmt.Errorf("rowMapper is nil")
 	}
 	dialect := query.GetDialect()
 	if dialect == "" {
@@ -60,7 +62,7 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(
 	_, ok := query.SetFetchableFields(nil)
 	cursor = &Cursor[T]{
 		ctx:       ctx,
-		rowmapper: rowmapper,
+		rowMapper: rowMapper,
 		row: &Row{
 			dialect:       dialect,
 			queryIsStatic: !ok,
@@ -72,11 +74,11 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowmapper func(
 		},
 	}
 
-	// If the query is dynamic, call the rowmapper to populate row.fields and
+	// If the query is dynamic, call the rowMapper to populate row.fields and
 	// row.scanDest. Then, insert those fields back into the query.
 	if !cursor.row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowmapper(cursor.row)
+		_ = cursor.rowMapper(cursor.row)
 		query, _ = query.SetFetchableFields(cursor.row.fields)
 	}
 
@@ -198,7 +200,7 @@ func (cursor *Cursor[T]) Result() (result T, err error) {
 	}
 	cursor.row.runningIndex = 0
 	defer mapperFunctionPanicked(&err)
-	result = cursor.rowmapper(cursor.row)
+	result = cursor.rowMapper(cursor.row)
 	return result, nil
 }
 
@@ -234,8 +236,8 @@ func (cursor *Cursor[T]) Close() error {
 
 // FetchOne returns the first result from running the given Query on the given
 // DB.
-func FetchOne[T any](db DB, query Query, rowmapper func(*Row) T) (T, error) {
-	cursor, err := fetchCursor(context.Background(), db, query, rowmapper, 1)
+func FetchOne[T any](db DB, query Query, rowMapper RowMapper[T]) (T, error) {
+	cursor, err := fetchCursor[T](context.Background(), db, query, rowMapper, 1)
 	if err != nil {
 		return *new(T), err
 	}
@@ -244,8 +246,8 @@ func FetchOne[T any](db DB, query Query, rowmapper func(*Row) T) (T, error) {
 }
 
 // FetchOneContext is like FetchOne but additionally requires a context.Context.
-func FetchOneContext[T any](ctx context.Context, db DB, query Query, rowmapper func(*Row) T) (T, error) {
-	cursor, err := fetchCursor(ctx, db, query, rowmapper, 1)
+func FetchOneContext[T any](ctx context.Context, db DB, query Query, rowMapper RowMapper[T]) (T, error) {
+	cursor, err := fetchCursor[T](ctx, db, query, rowMapper, 1)
 	if err != nil {
 		return *new(T), err
 	}
@@ -254,8 +256,8 @@ func FetchOneContext[T any](ctx context.Context, db DB, query Query, rowmapper f
 }
 
 // FetchAll returns all results from running the given Query on the given DB.
-func FetchAll[T any](db DB, query Query, rowmapper func(*Row) T) ([]T, error) {
-	cursor, err := fetchCursor(context.Background(), db, query, rowmapper, 1)
+func FetchAll[T any](db DB, query Query, rowMapper RowMapper[T]) ([]T, error) {
+	cursor, err := fetchCursor[T](context.Background(), db, query, rowMapper, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -264,8 +266,8 @@ func FetchAll[T any](db DB, query Query, rowmapper func(*Row) T) ([]T, error) {
 }
 
 // FetchAllContext is like FetchAll but additionally requires a context.Context.
-func FetchAllContext[T any](ctx context.Context, db DB, query Query, rowmapper func(*Row) T) ([]T, error) {
-	cursor, err := fetchCursor(ctx, db, query, rowmapper, 1)
+func FetchAllContext[T any](ctx context.Context, db DB, query Query, rowMapper RowMapper[T]) ([]T, error) {
+	cursor, err := fetchCursor[T](ctx, db, query, rowMapper, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -280,36 +282,36 @@ type CompiledFetch[T any] struct {
 	query     string
 	args      []any
 	params    map[string][]int
-	rowmapper func(*Row) T
-	// if queryIsStatic is true, the rowmapper doesn't actually know what
+	rowMapper RowMapper[T]
+	// if queryIsStatic is true, the rowMapper doesn't actually know what
 	// columns are in the query, and it must be determined at runtime after
 	// running the query.
 	queryIsStatic bool
 }
 
 // NewCompiledFetch returns a new CompiledFetch.
-func NewCompiledFetch[T any](dialect string, query string, args []any, params map[string][]int, rowmapper func(*Row) T) *CompiledFetch[T] {
+func NewCompiledFetch[T any](dialect string, query string, args []any, params map[string][]int, rowMapper RowMapper[T]) *CompiledFetch[T] {
 	return &CompiledFetch[T]{
 		dialect:   dialect,
 		query:     query,
 		args:      args,
 		params:    params,
-		rowmapper: rowmapper,
+		rowMapper: rowMapper,
 	}
 }
 
 // CompileFetch returns a new CompileFetch.
-func CompileFetch[T any](q Query, rowmapper func(*Row) T) (*CompiledFetch[T], error) {
-	return CompileFetchContext(context.Background(), q, rowmapper)
+func CompileFetch[T any](q Query, rowMapper RowMapper[T]) (*CompiledFetch[T], error) {
+	return CompileFetchContext[T](context.Background(), q, rowMapper)
 }
 
 // CompileFetchContext is like CompileFetch but accepts a context.Context.
-func CompileFetchContext[T any](ctx context.Context, query Query, rowmapper func(*Row) T) (compiledFetch *CompiledFetch[T], err error) {
+func CompileFetchContext[T any](ctx context.Context, query Query, rowMapper RowMapper[T]) (compiledFetch *CompiledFetch[T], err error) {
 	if query == nil {
 		return nil, fmt.Errorf("query is nil")
 	}
-	if rowmapper == nil {
-		return nil, fmt.Errorf("rowmapper is nil")
+	if rowMapper == nil {
+		return nil, fmt.Errorf("rowMapper is nil")
 	}
 	dialect := query.GetDialect()
 	if dialect == "" {
@@ -323,7 +325,7 @@ func CompileFetchContext[T any](ctx context.Context, query Query, rowmapper func
 	compiledFetch = &CompiledFetch[T]{
 		dialect:       dialect,
 		params:        make(map[string][]int),
-		rowmapper:     rowmapper,
+		rowMapper:     rowMapper,
 		queryIsStatic: !ok,
 	}
 	row := &Row{
@@ -331,11 +333,11 @@ func CompileFetchContext[T any](ctx context.Context, query Query, rowmapper func
 		queryIsStatic: !ok,
 	}
 
-	// If the query is dynamic, call the rowmapper to populate row.fields.
+	// If the query is dynamic, call the rowMapper to populate row.fields.
 	// Then, insert those fields back into the query.
 	if !row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = rowmapper(row)
+		_ = rowMapper(row)
 		query, _ = query.SetFetchableFields(row.fields)
 	}
 
@@ -367,7 +369,7 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 	}
 	cursor = &Cursor[T]{
 		ctx:       ctx,
-		rowmapper: compiledFetch.rowmapper,
+		rowMapper: compiledFetch.rowMapper,
 		row: &Row{
 			dialect:       compiledFetch.dialect,
 			queryIsStatic: compiledFetch.queryIsStatic,
@@ -380,10 +382,10 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 		},
 	}
 
-	// Call the rowmapper to populate row.scanDest.
+	// Call the rowMapper to populate row.scanDest.
 	if !cursor.row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowmapper(cursor.row)
+		_ = cursor.rowMapper(cursor.row)
 	}
 
 	// Substitute params.
@@ -497,9 +499,9 @@ func (compiledFetch *CompiledFetch[T]) FetchAllContext(ctx context.Context, db D
 	return cursorResults(cursor)
 }
 
-// GetSQL returns a copy of the dialect, query, args, params and rowmapper that
+// GetSQL returns a copy of the dialect, query, args, params and rowMapper that
 // make up the CompiledFetch.
-func (compiledFetch *CompiledFetch[T]) GetSQL() (dialect string, query string, args []any, params map[string][]int, rowmapper func(*Row) T) {
+func (compiledFetch *CompiledFetch[T]) GetSQL() (dialect string, query string, args []any, params map[string][]int, rowMapper RowMapper[T]) {
 	dialect = compiledFetch.dialect
 	query = compiledFetch.query
 	args = make([]any, len(compiledFetch.args))
@@ -510,7 +512,7 @@ func (compiledFetch *CompiledFetch[T]) GetSQL() (dialect string, query string, a
 		copy(indexes2, indexes)
 		params[name] = indexes2
 	}
-	return dialect, query, args, params, compiledFetch.rowmapper
+	return dialect, query, args, params, compiledFetch.rowMapper
 }
 
 // Prepare creates a PreparedFetch from a CompiledFetch by preparing it on
@@ -523,7 +525,7 @@ func (compiledFetch *CompiledFetch[T]) Prepare(db DB) (*PreparedFetch[T], error)
 func (compiledFetch *CompiledFetch[T]) PrepareContext(ctx context.Context, db DB) (*PreparedFetch[T], error) {
 	var err error
 	preparedFetch := &PreparedFetch[T]{
-		compiledFetch: NewCompiledFetch(compiledFetch.GetSQL()),
+		compiledFetch: NewCompiledFetch[T](compiledFetch.GetSQL()),
 	}
 	preparedFetch.compiledFetch.queryIsStatic = compiledFetch.queryIsStatic
 	if db == nil {
@@ -555,13 +557,13 @@ type PreparedFetch[T any] struct {
 }
 
 // PrepareFetch returns a new PreparedFetch.
-func PrepareFetch[T any](db DB, q Query, rowmapper func(*Row) T) (*PreparedFetch[T], error) {
-	return PrepareFetchContext(context.Background(), db, q, rowmapper)
+func PrepareFetch[T any](db DB, q Query, rowMapper RowMapper[T]) (*PreparedFetch[T], error) {
+	return PrepareFetchContext[T](context.Background(), db, q, rowMapper)
 }
 
 // PrepareFetchContext is like PrepareFetch but additionally requires a context.Context.
-func PrepareFetchContext[T any](ctx context.Context, db DB, q Query, rowmapper func(*Row) T) (*PreparedFetch[T], error) {
-	compiledFetch, err := CompileFetchContext(ctx, q, rowmapper)
+func PrepareFetchContext[T any](ctx context.Context, db DB, q Query, rowMapper RowMapper[T]) (*PreparedFetch[T], error) {
+	compiledFetch, err := CompileFetchContext[T](ctx, q, rowMapper)
 	if err != nil {
 		return nil, err
 	}
@@ -581,7 +583,7 @@ func (preparedFetch *PreparedFetch[T]) FetchCursorContext(ctx context.Context, p
 func (preparedFetch *PreparedFetch[T]) fetchCursor(ctx context.Context, params Params, skip int) (cursor *Cursor[T], err error) {
 	cursor = &Cursor[T]{
 		ctx:       ctx,
-		rowmapper: preparedFetch.compiledFetch.rowmapper,
+		rowMapper: preparedFetch.compiledFetch.rowMapper,
 		row: &Row{
 			dialect:       preparedFetch.compiledFetch.dialect,
 			queryIsStatic: preparedFetch.compiledFetch.queryIsStatic,
@@ -596,10 +598,10 @@ func (preparedFetch *PreparedFetch[T]) fetchCursor(ctx context.Context, params P
 		logger: preparedFetch.logger,
 	}
 
-	// If the query is dynamic, call the rowmapper to populate row.scanDest.
+	// If the query is dynamic, call the rowMapper to populate row.scanDest.
 	if !cursor.row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowmapper(cursor.row)
+		_ = cursor.rowMapper(cursor.row)
 	}
 
 	// Substitute params.
@@ -703,7 +705,7 @@ func (preparedFetch *PreparedFetch[T]) FetchAllContext(ctx context.Context, para
 
 // GetCompiled returns a copy of the underlying CompiledFetch.
 func (preparedFetch *PreparedFetch[T]) GetCompiled() *CompiledFetch[T] {
-	compiledFetch := NewCompiledFetch(preparedFetch.compiledFetch.GetSQL())
+	compiledFetch := NewCompiledFetch[T](preparedFetch.compiledFetch.GetSQL())
 	compiledFetch.queryIsStatic = preparedFetch.compiledFetch.queryIsStatic
 	return compiledFetch
 }
@@ -919,7 +921,7 @@ func (compiledExec *CompiledExec) exec(ctx context.Context, db DB, params Params
 	return execResult(sqlResult, &queryStats)
 }
 
-// GetSQL returns a copy of the dialect, query, args, params and rowmapper that
+// GetSQL returns a copy of the dialect, query, args, params and rowMapper that
 // make up the CompiledExec.
 func (compiledExec *CompiledExec) GetSQL() (dialect string, query string, args []any, params map[string][]int) {
 	dialect = compiledExec.dialect

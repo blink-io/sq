@@ -353,7 +353,7 @@ func TestRow(t *testing.T) {
 					value.name = row.StringField(TABLE00.NAME)
 					value.updatedAt = row.TimeField(TABLE00.UPDATED_AT)
 					// make sure Columns, ColumnTypes and Values are all
-					// callable inside the rowmapper even for dynamic queries.
+					// callable inside the rowMapper even for dynamic queries.
 					fmt.Println(row.Columns())
 					fmt.Println(row.ColumnTypes())
 					fmt.Println(row.Values())

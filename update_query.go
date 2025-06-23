@@ -205,8 +205,8 @@ func (q UpdateQuery) Set(assignments ...Assignment) UpdateQuery {
 }
 
 // SetFunc sets the ColumnMapper field of the UpdateQuery.
-func (q UpdateQuery) SetFunc(colmapper func(*Column)) UpdateQuery {
-	q.ColumnMapper = colmapper
+func (q UpdateQuery) SetFunc(columnMapper ColumnMapper) UpdateQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -275,8 +275,8 @@ func (q SQLiteUpdateQuery) Set(assignments ...Assignment) SQLiteUpdateQuery {
 }
 
 // SetFunc sets the ColumnMapper of the SQLiteUpdateQuery.
-func (q SQLiteUpdateQuery) SetFunc(colmapper func(*Column)) SQLiteUpdateQuery {
-	q.ColumnMapper = colmapper
+func (q SQLiteUpdateQuery) SetFunc(columnMapper ColumnMapper) SQLiteUpdateQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -374,8 +374,8 @@ func (q PostgresUpdateQuery) Set(assignments ...Assignment) PostgresUpdateQuery 
 }
 
 // SetFunc sets the ColumnMapper of the PostgresUpdateQuery.
-func (q PostgresUpdateQuery) SetFunc(colmapper func(*Column)) PostgresUpdateQuery {
-	q.ColumnMapper = colmapper
+func (q PostgresUpdateQuery) SetFunc(columnMapper ColumnMapper) PostgresUpdateQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -517,8 +517,8 @@ func (q MySQLUpdateQuery) Set(assignments ...Assignment) MySQLUpdateQuery {
 }
 
 // SetFunc sets the ColumnMapper of the MySQLUpdateQuery.
-func (q MySQLUpdateQuery) SetFunc(colmapper func(*Column)) MySQLUpdateQuery {
-	q.ColumnMapper = colmapper
+func (q MySQLUpdateQuery) SetFunc(columnMapper ColumnMapper) MySQLUpdateQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -585,8 +585,8 @@ func (q SQLServerUpdateQuery) Set(assignments ...Assignment) SQLServerUpdateQuer
 }
 
 // SetFunc sets the ColumnMapper of the SQLServerUpdateQuery.
-func (q SQLServerUpdateQuery) SetFunc(colmapper func(*Column)) SQLServerUpdateQuery {
-	q.ColumnMapper = colmapper
+func (q SQLServerUpdateQuery) SetFunc(columnMapper ColumnMapper) SQLServerUpdateQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 

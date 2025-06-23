@@ -426,7 +426,7 @@ func TestUpdateQuery(t *testing.T) {
 	})
 
 	f1, f2, f3 := Expr("f1"), Expr("f2"), Expr("f3")
-	colmapper := func(col *Column) {
+	columMapper := func(col *Column) {
 		col.Set(f1, 1)
 		col.Set(f2, 2)
 		col.Set(f3, 3)
@@ -437,7 +437,7 @@ func TestUpdateQuery(t *testing.T) {
 		var tt TestTable
 		tt.item = UpdateQuery{
 			UpdateTable:    policyTableStub{policy: And(Expr("1 = 1"), Expr("2 = 2"))},
-			ColumnMapper:   colmapper,
+			ColumnMapper:   columMapper,
 			WherePredicate: Expr("3 = 3"),
 		}
 		tt.wantQuery = "UPDATE policy_table_stub SET f1 = ?, f2 = ?, f3 = ? WHERE (1 = 1 AND 2 = 2) AND 3 = 3"
@@ -449,7 +449,7 @@ func TestUpdateQuery(t *testing.T) {
 		description: "nil UpdateTable not allowed",
 		item: UpdateQuery{
 			UpdateTable:  nil,
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 		},
 	}, {
 		description: "empty Assignments not allowed",
@@ -463,7 +463,7 @@ func TestUpdateQuery(t *testing.T) {
 			Dialect:      DialectMySQL,
 			UpdateTable:  Expr("tbl"),
 			FromTable:    Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 		},
 	}, {
 		description: "dialect does not allow JOIN without FROM",
@@ -474,14 +474,14 @@ func TestUpdateQuery(t *testing.T) {
 			JoinTables: []JoinTable{
 				Join(Expr("tbl"), Expr("1 = 1")),
 			},
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 		},
 	}, {
 		description: "dialect does not support ORDER BY",
 		item: UpdateQuery{
 			Dialect:       DialectPostgres,
 			UpdateTable:   Expr("tbl"),
-			ColumnMapper:  colmapper,
+			ColumnMapper:  columMapper,
 			OrderByFields: Fields{f1},
 		},
 	}, {
@@ -489,7 +489,7 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			Dialect:      DialectPostgres,
 			UpdateTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 			LimitRows:    5,
 		},
 	}, {
@@ -497,7 +497,7 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			Dialect:         DialectMySQL,
 			UpdateTable:     Expr("tbl"),
-			ColumnMapper:    colmapper,
+			ColumnMapper:    columMapper,
 			ReturningFields: Fields{f1, f2, f3},
 		},
 	}}
@@ -520,20 +520,20 @@ func TestUpdateQuery(t *testing.T) {
 		description: "UpdateTable Policy err",
 		item: UpdateQuery{
 			UpdateTable:  policyTableStub{err: ErrFaultySQL},
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 		},
 	}, {
 		description: "FromTable Policy err",
 		item: UpdateQuery{
 			UpdateTable:  Expr("tbl"),
 			FromTable:    policyTableStub{err: ErrFaultySQL},
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 		},
 	}, {
 		description: "JoinTables Policy err",
 		item: UpdateQuery{
 			UpdateTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 			FromTable:    Expr("tbl"),
 			JoinTables: []JoinTable{
 				Join(policyTableStub{err: ErrFaultySQL}, Expr("1 = 1")),
@@ -544,13 +544,13 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			CTEs:         []CTE{NewCTE("cte", nil, Queryf("SELECT {}", FaultySQL{}))},
 			UpdateTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 		},
 	}, {
 		description: "UpdateTable err",
 		item: UpdateQuery{
 			UpdateTable:  FaultySQL{},
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 		},
 	}, {
 		description: "not mysql Assignments err",
@@ -564,7 +564,7 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			Dialect:      DialectPostgres,
 			UpdateTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 			FromTable:    FaultySQL{},
 		},
 	}, {
@@ -572,7 +572,7 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			Dialect:      DialectPostgres,
 			UpdateTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columMapper,
 			FromTable:    Expr("tbl"),
 			JoinTables: []JoinTable{
 				Join(FaultySQL{}, Expr("1 = 1")),
@@ -589,14 +589,14 @@ func TestUpdateQuery(t *testing.T) {
 		description: "WherePredicate Variadic err",
 		item: UpdateQuery{
 			UpdateTable:    Expr("tbl"),
-			ColumnMapper:   colmapper,
+			ColumnMapper:   columMapper,
 			WherePredicate: And(FaultySQL{}),
 		},
 	}, {
 		description: "WherePredicate err",
 		item: UpdateQuery{
 			UpdateTable:    Expr("tbl"),
-			ColumnMapper:   colmapper,
+			ColumnMapper:   columMapper,
 			WherePredicate: FaultySQL{},
 		},
 	}, {
@@ -604,7 +604,7 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			Dialect:       DialectMySQL,
 			UpdateTable:   Expr("tbl"),
-			ColumnMapper:  colmapper,
+			ColumnMapper:  columMapper,
 			OrderByFields: Fields{FaultySQL{}},
 		},
 	}, {
@@ -612,7 +612,7 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			Dialect:       DialectMySQL,
 			UpdateTable:   Expr("tbl"),
-			ColumnMapper:  colmapper,
+			ColumnMapper:  columMapper,
 			OrderByFields: Fields{f1},
 			LimitRows:     FaultySQL{},
 		},
@@ -621,7 +621,7 @@ func TestUpdateQuery(t *testing.T) {
 		item: UpdateQuery{
 			Dialect:         DialectPostgres,
 			UpdateTable:     Expr("tbl"),
-			ColumnMapper:    colmapper,
+			ColumnMapper:    columMapper,
 			ReturningFields: Fields{FaultySQL{}},
 		},
 	}}

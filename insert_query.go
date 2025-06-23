@@ -6,10 +6,12 @@ import (
 	"fmt"
 )
 
+type ColumnMapper = func(*Column)
+
 // InsertQuery represents the SQL INSERT query.
 type InsertQuery struct {
 	Dialect      string
-	ColumnMapper func(*Column)
+	ColumnMapper ColumnMapper
 	// WITH
 	CTEs []CTE
 	// INSERT INTO
@@ -159,8 +161,8 @@ func (q InsertQuery) Values(values ...any) InsertQuery {
 }
 
 // ColumnValues sets the ColumnMapper field of the InsertQuery.
-func (q InsertQuery) ColumnValues(colmapper func(*Column)) InsertQuery {
-	q.ColumnMapper = colmapper
+func (q InsertQuery) ColumnValues(columnMapper ColumnMapper) InsertQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -320,8 +322,8 @@ func (q SQLiteInsertQuery) Values(values ...any) SQLiteInsertQuery {
 }
 
 // ColumnValues sets the ColumnMapper field of the SQLiteInsertQuery.
-func (q SQLiteInsertQuery) ColumnValues(colmapper func(*Column)) SQLiteInsertQuery {
-	q.ColumnMapper = colmapper
+func (q SQLiteInsertQuery) ColumnValues(columnMapper ColumnMapper) SQLiteInsertQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -423,8 +425,8 @@ func (q PostgresInsertQuery) Values(values ...any) PostgresInsertQuery {
 }
 
 // ColumnValues sets the ColumnMapper field of the PostgresInsertQuery.
-func (q PostgresInsertQuery) ColumnValues(colmapper func(*Column)) PostgresInsertQuery {
-	q.ColumnMapper = colmapper
+func (q PostgresInsertQuery) ColumnValues(columnMapper ColumnMapper) PostgresInsertQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -546,8 +548,8 @@ func (q MySQLInsertQuery) As(rowAlias string) MySQLInsertQuery {
 }
 
 // ColumnValues sets the ColumnMapper field of the MySQLInsertQuery.
-func (q MySQLInsertQuery) ColumnValues(colmapper func(*Column)) MySQLInsertQuery {
-	q.ColumnMapper = colmapper
+func (q MySQLInsertQuery) ColumnValues(columnMapper ColumnMapper) MySQLInsertQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 
@@ -621,8 +623,8 @@ func (q SQLServerInsertQuery) Values(values ...any) SQLServerInsertQuery {
 }
 
 // ColumnValues sets the ColumnMapper field of the SQLServerInsertQuery.
-func (q SQLServerInsertQuery) ColumnValues(colmapper func(*Column)) SQLServerInsertQuery {
-	q.ColumnMapper = colmapper
+func (q SQLServerInsertQuery) ColumnValues(columnMapper ColumnMapper) SQLServerInsertQuery {
+	q.ColumnMapper = columnMapper
 	return q
 }
 

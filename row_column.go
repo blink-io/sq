@@ -31,7 +31,7 @@ type Row struct {
 }
 
 // Columns returns the names of the columns returned by the query. This method
-// can only be called in a rowmapper if it is paired with a raw SQL query e.g.
+// can only be called in a rowMapper if it is paired with a raw SQL query e.g.
 // Queryf("SELECT * FROM my_table"). Otherwise, an error will be returned.
 func (row *Row) Columns() []string {
 	if row.queryIsStatic {
@@ -48,7 +48,7 @@ func (row *Row) Columns() []string {
 }
 
 // ColumnTypes returns the column types returned by the query. This method can
-// only be called in a rowmapper if it is paired with a raw SQL query e.g.
+// only be called in a rowMapper if it is paired with a raw SQL query e.g.
 // Queryf("SELECT * FROM my_table"). Otherwise, an error will be returned.
 func (row *Row) ColumnTypes() []*sql.ColumnType {
 	if row.queryIsStatic {
@@ -65,7 +65,7 @@ func (row *Row) ColumnTypes() []*sql.ColumnType {
 }
 
 // Values returns the values of the current row. This method can only be called
-// in a rowmapper if it is paired with a raw SQL query e.g. Queryf("SELECT *
+// in a rowMapper if it is paired with a raw SQL query e.g. Queryf("SELECT *
 // FROM my_table"). Otherwise, an error will be returned.
 func (row *Row) Values() []any {
 	if row.queryIsStatic {

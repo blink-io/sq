@@ -494,7 +494,7 @@ func TestInsertQuery(t *testing.T) {
 	})
 
 	f1, f2, f3 := Expr("f1"), Expr("f2"), Expr("f3")
-	colmapper := func(col *Column) {
+	columnMapper := func(col *Column) {
 		col.Set(f1, 1)
 		col.Set(f2, 2)
 		col.Set(f3, 3)
@@ -506,7 +506,7 @@ func TestInsertQuery(t *testing.T) {
 			Dialect:      DialectMySQL,
 			CTEs:         []CTE{NewCTE("cte", nil, Queryf("SELECT 1"))},
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 		},
 	}, {
 		description: "dialect does not support INSERT IGNORE",
@@ -514,20 +514,20 @@ func TestInsertQuery(t *testing.T) {
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
 			InsertIgnore: true,
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 		},
 	}, {
 		description: "nil IntoTable not allowed",
 		item: InsertQuery{
 			InsertTable:  nil,
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 		},
 	}, {
 		description: "dialect does not support IntoTable alias",
 		item: InsertQuery{
 			Dialect:      DialectMySQL,
 			InsertTable:  Expr("tbl").As("t"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 		},
 	}, {
 		description: "nil Field in InsertColumns not allowed",
@@ -542,7 +542,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			RowAlias:     "new",
 		},
 	}, {
@@ -560,7 +560,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			Conflict:     ConflictClause{Fields: Fields{nil}},
 		},
 	}}
@@ -584,13 +584,13 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			CTEs:         []CTE{NewCTE("cte", nil, FaultySQL{})},
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 		},
 	}, {
 		description: "IntoTable err",
 		item: InsertQuery{
 			InsertTable:  FaultySQL{},
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 		},
 	}, {
 		description: "RowValues err",
@@ -611,7 +611,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			Conflict: ConflictClause{
 				Fields:    Fields{f1, f2},
 				Predicate: And(FaultySQL{}),
@@ -622,7 +622,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			Conflict: ConflictClause{
 				Fields:    Fields{f1, f2},
 				Predicate: FaultySQL{},
@@ -633,7 +633,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			Conflict: ConflictClause{
 				Fields:     Fields{f1, f2},
 				Resolution: Assignments{FaultySQL{}},
@@ -644,7 +644,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			Conflict: ConflictClause{
 				Fields:              Fields{f1, f2},
 				Resolution:          Assignments{FaultySQL{}},
@@ -656,7 +656,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectPostgres,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			Conflict: ConflictClause{
 				Fields:              Fields{f1, f2},
 				Resolution:          Assignments{Set(f1, f1)},
@@ -668,7 +668,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:      DialectMySQL,
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: colmapper,
+			ColumnMapper: columnMapper,
 			Conflict: ConflictClause{
 				Resolution: Assignments{Set(f1, FaultySQL{})},
 			},
@@ -678,7 +678,7 @@ func TestInsertQuery(t *testing.T) {
 		item: InsertQuery{
 			Dialect:         DialectPostgres,
 			InsertTable:     Expr("tbl"),
-			ColumnMapper:    colmapper,
+			ColumnMapper:    columnMapper,
 			ReturningFields: Fields{FaultySQL{}},
 		},
 	}}

@@ -1,6 +1,7 @@
 package sq
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/url"
@@ -297,7 +298,7 @@ func TestRow(t *testing.T) {
 
 			// Insert the data.
 			result, err := Exec(Log(db), InsertInto(TABLE00).
-				ColumnValues(func(col *Column) {
+				ColumnValues(func(ctx context.Context, col *Column) {
 					for _, value := range table00Values {
 						col.SetUUID(TABLE00.UUID, value.uuid)
 						col.SetJSON(TABLE00.DATA, value.data)
@@ -332,7 +333,7 @@ func TestRow(t *testing.T) {
 			values, err := FetchAll(VerboseLog(db), From(TABLE00).
 				OrderBy(TABLE00.UUID).
 				SetDialect(tt.dialect),
-				func(row *Row) Table00 {
+				func(ctx context.Context, row *Row) Table00 {
 					var value Table00
 					row.UUIDField(&value.uuid, TABLE00.UUID)
 					row.JSONField(&value.data, TABLE00.DATA)
@@ -388,7 +389,7 @@ func TestRow(t *testing.T) {
 
 			// Insert NULLs.
 			_, err = Exec(Log(db), InsertInto(TABLE00).
-				ColumnValues(func(col *Column) {
+				ColumnValues(func(ctx context.Context, col *Column) {
 					col.Set(TABLE00.UUID, nil)
 					col.Set(TABLE00.DATA, nil)
 					col.Set(TABLE00.COLOR, nil)
@@ -419,7 +420,7 @@ func TestRow(t *testing.T) {
 				Where(TABLE00.UUID.IsNull()).
 				OrderBy(TABLE00.UUID).
 				SetDialect(tt.dialect),
-				func(row *Row) Table00 {
+				func(ctx context.Context, row *Row) Table00 {
 					var value Table00
 					row.UUIDField(&value.uuid, TABLE00.UUID)
 					row.JSONField(&value.data, TABLE00.DATA)
@@ -547,7 +548,7 @@ func TestRowScan(t *testing.T) {
 			result, err := Exec(Log(db), InsertQuery{
 				Dialect:     tt.dialect,
 				InsertTable: Expr("table01"),
-				ColumnMapper: func(col *Column) {
+				ColumnMapper: func(ctx context.Context, col *Column) {
 					for _, value := range table01Values {
 						col.Set(Expr("id"), value[0])
 						col.Set(Expr("score"), value[1])
@@ -568,7 +569,7 @@ func TestRowScan(t *testing.T) {
 			t.Run("dynamic SQL query", func(t *testing.T) {
 				gotValues, err := FetchAll(db,
 					Queryf("SELECT {*} FROM table01 WHERE id IS NOT NULL ORDER BY id").SetDialect(tt.dialect),
-					func(row *Row) []any {
+					func(ctx context.Context, row *Row) []any {
 						var id int
 						var score1 int64
 						var score2 int32
@@ -605,7 +606,7 @@ func TestRowScan(t *testing.T) {
 			t.Run("dynamic SQL query (null values)", func(t *testing.T) {
 				gotValue, err := FetchOne(db,
 					Queryf("SELECT {*} FROM table01 WHERE id IS NULL").SetDialect(tt.dialect),
-					func(row *Row) []any {
+					func(ctx context.Context, row *Row) []any {
 						var id int
 						var score1 int64
 						var score2 int32
@@ -638,7 +639,7 @@ func TestRowScan(t *testing.T) {
 			t.Run("dynamic SQL query (null values) (using sql.Null structs)", func(t *testing.T) {
 				gotValue, err := FetchOne(db,
 					Queryf("SELECT {*} FROM table01 WHERE id IS NULL").SetDialect(tt.dialect),
-					func(row *Row) []any {
+					func(ctx context.Context, row *Row) []any {
 						var id sql.NullInt64
 						var score1 sql.NullInt64
 						var score2 sql.NullInt32
@@ -672,7 +673,7 @@ func TestRowScan(t *testing.T) {
 				// Raw SQL query with.
 				gotValues, err := FetchAll(Log(db),
 					Queryf("SELECT id, score, price, name, is_active, updated_at FROM table01 WHERE id IS NOT NULL ORDER BY id").SetDialect(tt.dialect),
-					func(row *Row) []any {
+					func(ctx context.Context, row *Row) []any {
 						return []any{
 							row.Int("id"),
 							row.Int64("score"),
@@ -699,7 +700,7 @@ func TestRowScan(t *testing.T) {
 			t.Run("static SQL query (raw Values)", func(t *testing.T) {
 				gotValues, err := FetchAll(db,
 					Queryf("SELECT id, score, price, name, is_active, updated_at FROM table01 WHERE id IS NOT NULL ORDER BY id").SetDialect(tt.dialect),
-					func(row *Row) []any {
+					func(ctx context.Context, row *Row) []any {
 						columns := row.Columns()
 						columnTypes := row.ColumnTypes()
 						values := row.Values()
@@ -738,7 +739,7 @@ func TestRowScan(t *testing.T) {
 			t.Run("static SQL query (null values)", func(t *testing.T) {
 				gotValue, err := FetchOne(db,
 					Queryf("SELECT id, score, price, name, is_active, updated_at FROM table01 WHERE id IS NULL").SetDialect(tt.dialect),
-					func(row *Row) []any {
+					func(ctx context.Context, row *Row) []any {
 						columns := row.Columns()
 						columnTypes := row.ColumnTypes()
 						values := row.Values()
@@ -759,7 +760,7 @@ func TestRowScan(t *testing.T) {
 			t.Run("static SQL query (null values) (using sql.Null structs)", func(t *testing.T) {
 				gotValue, err := FetchOne(db,
 					Queryf("SELECT id, score, price, name, is_active, updated_at FROM table01 WHERE id IS NULL").SetDialect(tt.dialect),
-					func(row *Row) []any {
+					func(ctx context.Context, row *Row) []any {
 						return []any{
 							row.NullInt64("score"),
 							row.NullFloat64("price"),

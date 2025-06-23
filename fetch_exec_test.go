@@ -1,6 +1,7 @@
 package sq
 
 import (
+	"context"
 	"database/sql"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ type Actor struct {
 	LastUpdate time.Time
 }
 
-func actorRowMapper(row *Row) Actor {
+func actorRowMapper(ctx context.Context, row *Row) Actor {
 	var actor Actor
 	actorID, _ := row.Value("actor.actor_id").(int64)
 	actor.ActorID = int(actorID)
@@ -35,7 +36,7 @@ func actorRowMapper(row *Row) Actor {
 	return actor
 }
 
-func actorRowMapperRawSQL(row *Row) Actor {
+func actorRowMapperRawSQL(ctx context.Context, row *Row) Actor {
 	result := make(map[string]any)
 	values := row.Values()
 	for i, column := range row.Columns() {
@@ -176,7 +177,7 @@ func TestFetchExec(t *testing.T) {
 	// Exec.
 	res, err := Exec(Log(db), SQLite.
 		InsertInto(ACTOR).
-		ColumnValues(func(col *Column) {
+		ColumnValues(func(ctx context.Context, col *Column) {
 			for _, actor := range referenceActors {
 				col.SetInt(ACTOR.ACTOR_ID, actor.ActorID)
 				col.SetString(ACTOR.FIRST_NAME, actor.FirstName)
@@ -257,7 +258,7 @@ func TestCompiledFetchExec(t *testing.T) {
 	// CompiledExec.
 	compiledExec, err := CompileExec(SQLite.
 		InsertInto(ACTOR).
-		ColumnValues(func(col *Column) {
+		ColumnValues(func(ctx context.Context, col *Column) {
 			col.Set(ACTOR.ACTOR_ID, IntParam("actor_id", 0))
 			col.Set(ACTOR.FIRST_NAME, StringParam("first_name", ""))
 			col.Set(ACTOR.LAST_NAME, StringParam("last_name", ""))
@@ -361,7 +362,7 @@ func TestPreparedFetchExec(t *testing.T) {
 	// PreparedExec.
 	preparedExec, err := PrepareExec(Log(db), SQLite.
 		InsertInto(ACTOR).
-		ColumnValues(func(col *Column) {
+		ColumnValues(func(ctx context.Context, col *Column) {
 			col.Set(ACTOR.ACTOR_ID, IntParam("actor_id", 0))
 			col.Set(ACTOR.FIRST_NAME, StringParam("first_name", ""))
 			col.Set(ACTOR.LAST_NAME, StringParam("last_name", ""))

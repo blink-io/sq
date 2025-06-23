@@ -16,8 +16,6 @@ import (
 // DefaultDialect is used by all queries (if no dialect is explicitly provided).
 var DefaultDialect atomic.Pointer[string]
 
-type RowMapper[T any] = func(*Row) T
-
 // A Cursor represents a database cursor.
 type Cursor[T any] struct {
 	ctx           context.Context
@@ -78,7 +76,7 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowMapper RowMa
 	// row.scanDest. Then, insert those fields back into the query.
 	if !cursor.row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowMapper(cursor.row)
+		_ = cursor.rowMapper(ctx, cursor.row)
 		query, _ = query.SetFetchableFields(cursor.row.fields)
 	}
 
@@ -200,7 +198,8 @@ func (cursor *Cursor[T]) Result() (result T, err error) {
 	}
 	cursor.row.runningIndex = 0
 	defer mapperFunctionPanicked(&err)
-	result = cursor.rowMapper(cursor.row)
+	ctx := context.Background()
+	result = cursor.rowMapper(ctx, cursor.row)
 	return result, nil
 }
 
@@ -337,7 +336,7 @@ func CompileFetchContext[T any](ctx context.Context, query Query, rowMapper RowM
 	// Then, insert those fields back into the query.
 	if !row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = rowMapper(row)
+		_ = rowMapper(ctx, row)
 		query, _ = query.SetFetchableFields(row.fields)
 	}
 
@@ -385,7 +384,7 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 	// Call the rowMapper to populate row.scanDest.
 	if !cursor.row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowMapper(cursor.row)
+		_ = cursor.rowMapper(ctx, cursor.row)
 	}
 
 	// Substitute params.
@@ -601,7 +600,7 @@ func (preparedFetch *PreparedFetch[T]) fetchCursor(ctx context.Context, params P
 	// If the query is dynamic, call the rowMapper to populate row.scanDest.
 	if !cursor.row.queryIsStatic {
 		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowMapper(cursor.row)
+		_ = cursor.rowMapper(ctx, cursor.row)
 	}
 
 	// Substitute params.

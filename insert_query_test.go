@@ -1,6 +1,7 @@
 package sq
 
 import (
+	"context"
 	"testing"
 
 	"github.com/blink-io/sq/internal/testutil"
@@ -60,7 +61,7 @@ func TestSQLiteInsertQuery(t *testing.T) {
 		tt.item = SQLite.
 			With(NewCTE("cte", nil, Queryf("SELECT 1"))).
 			InsertInto(a).
-			ColumnValues(func(col *Column) {
+			ColumnValues(func(ctx context.Context, col *Column) {
 				// bob
 				col.SetString(a.FIRST_NAME, "bob")
 				col.SetString(a.LAST_NAME, "the builder")
@@ -193,7 +194,7 @@ func TestPostgresInsertQuery(t *testing.T) {
 		tt.item = Postgres.
 			With(NewCTE("cte", nil, Queryf("SELECT 1"))).
 			InsertInto(a).
-			ColumnValues(func(col *Column) {
+			ColumnValues(func(ctx context.Context, col *Column) {
 				// bob
 				col.SetString(a.FIRST_NAME, "bob")
 				col.SetString(a.LAST_NAME, "the builder")
@@ -323,7 +324,7 @@ func TestMySQLInsertQuery(t *testing.T) {
 		var tt TestTable
 		tt.item = MySQL.
 			InsertInto(a).
-			ColumnValues(func(col *Column) {
+			ColumnValues(func(ctx context.Context, col *Column) {
 				// bob
 				col.SetString(a.FIRST_NAME, "bob")
 				col.SetString(a.LAST_NAME, "the builder")
@@ -454,7 +455,7 @@ func TestSQLServerInsertQuery(t *testing.T) {
 		tt.item = SQLServer.
 			With(NewCTE("cte", nil, Queryf("SELECT 1"))).
 			InsertInto(a).
-			ColumnValues(func(col *Column) {
+			ColumnValues(func(ctx context.Context, col *Column) {
 				// bob
 				col.SetString(a.FIRST_NAME, "bob")
 				col.SetString(a.LAST_NAME, "the builder")
@@ -494,7 +495,7 @@ func TestInsertQuery(t *testing.T) {
 	})
 
 	f1, f2, f3 := Expr("f1"), Expr("f2"), Expr("f3")
-	columnMapper := func(col *Column) {
+	columnMapper := func(ctx context.Context, col *Column) {
 		col.Set(f1, 1)
 		col.Set(f2, 2)
 		col.Set(f3, 3)
@@ -577,7 +578,7 @@ func TestInsertQuery(t *testing.T) {
 		description: "ColumnMapper err",
 		item: InsertQuery{
 			InsertTable:  Expr("tbl"),
-			ColumnMapper: func(*Column) { panic(ErrFaultySQL) },
+			ColumnMapper: func(context.Context, *Column) { panic(ErrFaultySQL) },
 		},
 	}, {
 		description: "CTEs err",

@@ -9,7 +9,7 @@ import (
 // UpdateQuery represents an SQL UPDATE query.
 type UpdateQuery struct {
 	Dialect      string
-	ColumnMapper func(*Column)
+	ColumnMapper ColumnMapper
 	// WITH
 	CTEs []CTE
 	// UPDATE
@@ -39,7 +39,7 @@ func (q UpdateQuery) WriteSQL(ctx context.Context, dialect string, buf *bytes.Bu
 			isUpdate: true,
 		}
 		defer mapperFunctionPanicked(&err)
-		q.ColumnMapper(col)
+		q.ColumnMapper(ctx, col)
 		if err != nil {
 			return err
 		}

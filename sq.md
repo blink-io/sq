@@ -48,10 +48,10 @@ type Actor struct {
 
 Use one of the below three functions to run your query.
 
-- **FetchAll(db, query, rowmapper) ([]T, error)**
+- **FetchAll(db, query, rowMapper) ([]T, error)**
   - Fetch all results from a query.
   - Equivalent to [sql.Query](https://pkg.go.dev/database/sql#DB.Query).
-- **FetchOne(db, query, rowmapper) (T, error)**.
+- **FetchOne(db, query, rowMapper) (T, error)**.
   - Fetch one result from a query.
   - Returns sql.ErrNoRows if no results.
   - Equivalent to [sql.QueryRow](https://pkg.go.dev/database/sql#DB.QueryRow).
@@ -213,12 +213,12 @@ _, err := sq.Exec(db, sq.
 )
 ```
 
-## How the rowmapper works #rowmapper
+## How the rowMapper works #rowMapper
 
-The [FetchAll/FetchOne/FetchCursor examples in the quickstart](#rawsql-select) use a rowmapper function both as a way of indicating what fields should be selected, as well as encoding how each row should be procedurally mapped back to a model struct.
+The [FetchAll/FetchOne/FetchCursor examples in the quickstart](#rawsql-select) use a rowMapper function both as a way of indicating what fields should be selected, as well as encoding how each row should be procedurally mapped back to a model struct.
 
 ```go
-// The rowmapper function signature should match func(*sq.Row) T.
+// The rowMapper function signature should match func(*sq.Row) T.
 func(row *sq.Row) Actor {
     return Actor{
         ActorID:   row.Int("actor_id"),
@@ -228,13 +228,13 @@ func(row *sq.Row) Actor {
 }
 ```
 
-To go into greater detail, the rowmapper is first called in "passive mode" where the `sq.Row` records the fields needed by the SELECT query. Those fields are then injected back into the SELECT query ([via the `{*}` insertion point](#rawsql-select)) and the query is run for real. Then the rowmapper is called in "active mode" where each `sq.Row` method call actually returns a value from the underlying row. The `Actor` result returned by each rowmapper call is then appended into a slice. All this is done generically, so the rowmapper can yield any variable of type `T` and a slice `[]T` will be returned at the end.
+To go into greater detail, the rowMapper is first called in "passive mode" where the `sq.Row` records the fields needed by the SELECT query. Those fields are then injected back into the SELECT query ([via the `{*}` insertion point](#rawsql-select)) and the query is run for real. Then the rowMapper is called in "active mode" where each `sq.Row` method call actually returns a value from the underlying row. The `Actor` result returned by each rowmapper call is then appended into a slice. All this is done generically, so the rowmapper can yield any variable of type `T` and a slice `[]T` will be returned at the end.
 
-**The order in which you call the `sq.Row` methods must be deterministic and must not change between rowmapper invocations**. Don't put an `row.Int()` call inside an if-block, for example.
+**The order in which you call the `sq.Row` methods must be deterministic and must not change between rowMapper invocations**. Don't put an `row.Int()` call inside an if-block, for example.
 
 ### Static vs dynamic queries #static-vs-dynamic-queries
 
-The [query examples in the quickstart](#rawsql-select) showcase dynamic queries, i.e. queries whose SELECT-ed fields are dynamically determined by the rowmapper. You can also write static queries, where the columns you SELECT are hardcoded into the query and the rowmapper references those fields by alias/name.
+The [query examples in the quickstart](#rawsql-select) showcase dynamic queries, i.e. queries whose SELECT-ed fields are dynamically determined by the rowMapper. You can also write static queries, where the columns you SELECT are hardcoded into the query and the rowMapper references those fields by alias/name.
 
 ```go
 actors, err := sq.FetchAll(db, sq.
@@ -254,7 +254,7 @@ actors, err := sq.FetchAll(db, sq.
 
 ### Handling errors #rowmapper-handling-errors
 
-If you do any computation in a rowmapper that returns an error, you can panic() with it and the error will be propagated as the error return value of FetchAll/FetchOne/FetchCursor. Try not to do anything that returns an error in the rowmapper.
+If you do any computation in a rowMapper that returns an error, you can panic() with it and the error will be propagated as the error return value of FetchAll/FetchOne/FetchCursor. Try not to do anything that returns an error in the rowMapper.
 
 ```go
 func(row *sq.Row) Film {
@@ -2776,8 +2776,8 @@ if err != nil {
 }
 
 // Obtain the query string and args slice back from the CompiledFetch.
-// The params map and rowmapper function are also available.
-query, args, params, rowmapper := compiledQuery.GetSQL()
+// The params map and rowMapper function are also available.
+query, args, params, rowMapper := compiledQuery.GetSQL()
 
 // Execute the compiled query with the default values.
 actor, err := compiledQuery.FetchOne(db, nil)

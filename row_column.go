@@ -1,6 +1,7 @@
 package sq
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
@@ -15,6 +16,9 @@ import (
 	"github.com/blink-io/sq/internal/googleuuid"
 	"github.com/blink-io/sq/internal/pqarray"
 )
+
+// RowMapper defines row mapper function.
+type RowMapper[T any] = func(context.Context, *Row) T
 
 // Row represents the state of a row after a call to rows.Next().
 type Row struct {
@@ -1089,6 +1093,9 @@ func (row *Row) uuid(destPtr any, field UUID, skip int) {
 		destValue.Index(i).Set(reflect.ValueOf(uuid[i]))
 	}
 }
+
+// ColumnMapper defines column mapper function.
+type ColumnMapper = func(context.Context, *Column)
 
 // Column keeps track of what the values mapped to what Field in an
 // InsertQuery or SelectQuery.

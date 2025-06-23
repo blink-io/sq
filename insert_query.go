@@ -6,8 +6,6 @@ import (
 	"fmt"
 )
 
-type ColumnMapper = func(*Column)
-
 // InsertQuery represents the SQL INSERT query.
 type InsertQuery struct {
 	Dialect      string
@@ -39,7 +37,7 @@ func (q InsertQuery) WriteSQL(ctx context.Context, dialect string, buf *bytes.Bu
 			isUpdate: false,
 		}
 		defer mapperFunctionPanicked(&err)
-		q.ColumnMapper(col)
+		q.ColumnMapper(ctx, col)
 		if err != nil {
 			return err
 		}

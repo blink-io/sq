@@ -318,6 +318,20 @@ func (l *loggerStruct) LogQuery(ctx context.Context, queryStats QueryStats) {
 	l.logQuery(ctx, queryStats)
 }
 
+func Slogger(db DB, sl *slog.Logger, lv slog.Leveler) interface {
+	DB
+	Logger
+} {
+	ll := NewSlogger(sl, lv, LoggerConfig{
+		ShowTimeTaken: true,
+		ShowCaller:    true,
+	})
+	return struct {
+		DB
+		Logger
+	}{DB: db, Logger: ll}
+}
+
 type slogger struct {
 	ctx context.Context
 	sl  *slog.Logger

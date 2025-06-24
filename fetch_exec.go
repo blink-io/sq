@@ -75,8 +75,11 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowMapper RowMa
 	// If the query is dynamic, call the rowMapper to populate row.fields and
 	// row.scanDest. Then, insert those fields back into the query.
 	if !cursor.row.queryIsStatic {
-		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowMapper(ctx, cursor.row)
+		//defer mapperFunctionPanicked(&err)
+		_, err = cursor.rowMapper(ctx, cursor.row)
+		if err != nil {
+			return nil, err
+		}
 		query, _ = query.SetFetchableFields(cursor.row.fields)
 	}
 
@@ -197,10 +200,10 @@ func (cursor *Cursor[T]) Result() (result T, err error) {
 		}
 	}
 	cursor.row.runningIndex = 0
-	defer mapperFunctionPanicked(&err)
+	//defer mapperFunctionPanicked(&err)
 	ctx := context.Background()
-	result = cursor.rowMapper(ctx, cursor.row)
-	return result, nil
+	result, err = cursor.rowMapper(ctx, cursor.row)
+	return result, err
 }
 
 func (cursor *Cursor[T]) log() {
@@ -335,8 +338,11 @@ func CompileFetchContext[T any](ctx context.Context, query Query, rowMapper RowM
 	// If the query is dynamic, call the rowMapper to populate row.fields.
 	// Then, insert those fields back into the query.
 	if !row.queryIsStatic {
-		defer mapperFunctionPanicked(&err)
-		_ = rowMapper(ctx, row)
+		//defer mapperFunctionPanicked(&err)
+		_, err = rowMapper(ctx, row)
+		if err != nil {
+			return nil, err
+		}
 		query, _ = query.SetFetchableFields(row.fields)
 	}
 
@@ -383,8 +389,11 @@ func (compiledFetch *CompiledFetch[T]) fetchCursor(ctx context.Context, db DB, p
 
 	// Call the rowMapper to populate row.scanDest.
 	if !cursor.row.queryIsStatic {
-		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowMapper(ctx, cursor.row)
+		//defer mapperFunctionPanicked(&err)
+		_, err = cursor.rowMapper(ctx, cursor.row)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Substitute params.
@@ -599,8 +608,11 @@ func (preparedFetch *PreparedFetch[T]) fetchCursor(ctx context.Context, params P
 
 	// If the query is dynamic, call the rowMapper to populate row.scanDest.
 	if !cursor.row.queryIsStatic {
-		defer mapperFunctionPanicked(&err)
-		_ = cursor.rowMapper(ctx, cursor.row)
+		//defer mapperFunctionPanicked(&err)
+		_, err = cursor.rowMapper(ctx, cursor.row)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Substitute params.

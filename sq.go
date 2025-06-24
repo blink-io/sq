@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -317,7 +318,7 @@ func mapperFunctionPanicked(err *error) {
 		case error:
 			*err = r
 		default:
-			*err = fmt.Errorf(fmt.Sprint(r))
+			*err = errors.New(fmt.Sprint(r))
 		}
 	}
 }

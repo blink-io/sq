@@ -37,8 +37,10 @@ func (q InsertQuery) WriteSQL(ctx context.Context, dialect string, buf *bytes.Bu
 			isUpdate: false,
 		}
 		defer mapperFunctionPanicked(&err)
-		q.ColumnMapper(ctx, col)
 		if err != nil {
+			return err
+		}
+		if err = q.ColumnMapper(ctx, col); err != nil {
 			return err
 		}
 		q.InsertColumns, q.RowValues = col.insertColumns, col.rowValues

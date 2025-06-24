@@ -39,8 +39,10 @@ func (q UpdateQuery) WriteSQL(ctx context.Context, dialect string, buf *bytes.Bu
 			isUpdate: true,
 		}
 		defer mapperFunctionPanicked(&err)
-		q.ColumnMapper(ctx, col)
 		if err != nil {
+			return err
+		}
+		if err = q.ColumnMapper(ctx, col); err != nil {
 			return err
 		}
 		q.Assignments = col.assignments

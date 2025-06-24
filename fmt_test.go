@@ -198,7 +198,7 @@ func TestWritef(t *testing.T) {
 		}
 		err := Writef(context.Background(), "", &buf, &args, params, format, values)
 		if err == nil {
-			t.Errorf(testutil.Callers() + " expected error but got nil")
+			t.Errorf("%s", testutil.Callers()+" expected error but got nil")
 		}
 	})
 

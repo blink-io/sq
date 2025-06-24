@@ -18,7 +18,7 @@ import (
 )
 
 // RowMapper defines row mapper function.
-type RowMapper[T any] = func(context.Context, *Row) T
+type RowMapper[T any] func(context.Context, *Row) T
 
 // Row represents the state of a row after a call to rows.Next().
 type Row struct {
@@ -124,7 +124,7 @@ func (row *Row) Value(format string, values ...any) any {
 // Scan scans the expression into destPtr.
 func (row *Row) Scan(destPtr any, format string, values ...any) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call Scan for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call Scan for static queries"))
 	}
 	row.scan(destPtr, Expr(format, values...), 1)
 }
@@ -132,7 +132,7 @@ func (row *Row) Scan(destPtr any, format string, values ...any) {
 // ScanField scans the field into destPtr.
 func (row *Row) ScanField(destPtr any, field Field) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call ScanField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call ScanField for static queries"))
 	}
 	row.scan(destPtr, field, 1)
 }
@@ -215,7 +215,7 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) Array(destPtr any, format string, values ...any) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call Array for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call Array for static queries"))
 	}
 	row.array(destPtr, Expr(format, values...), 1)
 }
@@ -224,7 +224,7 @@ func (row *Row) Array(destPtr any, format string, values ...any) {
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) ArrayField(destPtr any, field Array) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call ArrayField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call ArrayField for static queries"))
 	}
 	row.array(destPtr, field, 1)
 }
@@ -374,7 +374,7 @@ func (row *Row) Bytes(format string, values ...any) []byte {
 // BytesField returns the []byte value of the field.
 func (row *Row) BytesField(field Binary) []byte {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call BytesField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call BytesField for static queries"))
 	}
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
@@ -443,7 +443,7 @@ func (row *Row) Bool(format string, values ...any) bool {
 // BoolField returns the bool value of the field.
 func (row *Row) BoolField(field Boolean) bool {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call BoolField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call BoolField for static queries"))
 	}
 	return row.NullBoolField(field).Bool
 }
@@ -494,7 +494,7 @@ func (row *Row) NullBool(format string, values ...any) sql.NullBool {
 // NullBoolField returns the sql.NullBool value of the field.
 func (row *Row) NullBoolField(field Boolean) sql.NullBool {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call NullBoolField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullBoolField for static queries"))
 	}
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
@@ -511,7 +511,7 @@ func (row *Row) NullBoolField(field Boolean) sql.NullBool {
 // Enum scans the enum expression into destPtr.
 func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call Enum for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call Enum for static queries"))
 	}
 	row.enum(destPtr, Expr(format, values...), 1)
 }
@@ -519,7 +519,7 @@ func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 // EnumField scans the enum field into destPtr.
 func (row *Row) EnumField(destPtr Enumeration, field Enum) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call EnumField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call EnumField for static queries"))
 	}
 	row.enum(destPtr, field, 1)
 }
@@ -603,7 +603,7 @@ func (row *Row) Float64(format string, values ...any) float64 {
 // Float64Field returns the float64 value of the field.
 func (row *Row) Float64Field(field Number) float64 {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call Float64Field for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call Float64Field for static queries"))
 	}
 	return row.NullFloat64Field(field).Float64
 }
@@ -646,7 +646,7 @@ func (row *Row) NullFloat64(format string, values ...any) sql.NullFloat64 {
 // NullFloat64Field returns the sql.NullFloat64 value of the field.
 func (row *Row) NullFloat64Field(field Number) sql.NullFloat64 {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call NullFloat64Field for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullFloat64Field for static queries"))
 	}
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
@@ -698,7 +698,7 @@ func (row *Row) Int(format string, values ...any) int {
 // IntField returns the int value of the field.
 func (row *Row) IntField(field Number) int {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call IntField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call IntField for static queries"))
 	}
 	return int(row.NullInt64Field(field).Int64)
 }
@@ -741,7 +741,7 @@ func (row *Row) Int64(format string, values ...any) int64 {
 // Int64Field returns the int64 value of the field.
 func (row *Row) Int64Field(field Number) int64 {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call Int64Field for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call Int64Field for static queries"))
 	}
 	return row.NullInt64Field(field).Int64
 }
@@ -784,7 +784,7 @@ func (row *Row) NullInt64(format string, values ...any) sql.NullInt64 {
 // NullInt64Field returns the sql.NullInt64 value of the field.
 func (row *Row) NullInt64Field(field Number) sql.NullInt64 {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call NullInt64Field for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullInt64Field for static queries"))
 	}
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
@@ -801,7 +801,7 @@ func (row *Row) NullInt64Field(field Number) sql.NullInt64 {
 // JSON scans the JSON expression into destPtr.
 func (row *Row) JSON(destPtr any, format string, values ...any) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call JSON for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call JSON for static queries"))
 	}
 	row.json(destPtr, Expr(format, values...), 1)
 }
@@ -809,7 +809,7 @@ func (row *Row) JSON(destPtr any, format string, values ...any) {
 // JSONField scans the JSON field into destPtr.
 func (row *Row) JSONField(destPtr any, field JSON) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call JSONField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call JSONField for static queries"))
 	}
 	row.json(destPtr, field, 1)
 }
@@ -872,7 +872,7 @@ func (row *Row) String(format string, values ...any) string {
 // StringField returns the string value of the field.
 func (row *Row) StringField(field String) string {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call StringField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call StringField for static queries"))
 	}
 	return row.NullStringField(field).String
 }
@@ -910,7 +910,7 @@ func (row *Row) NullString(format string, values ...any) sql.NullString {
 // NullStringField returns the sql.NullString value of the field.
 func (row *Row) NullStringField(field String) sql.NullString {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call NullStringField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullStringField for static queries"))
 	}
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
@@ -977,7 +977,7 @@ func (row *Row) Time(format string, values ...any) time.Time {
 // TimeField returns the time.Time value of the field.
 func (row *Row) TimeField(field Time) time.Time {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call TimeField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call TimeField for static queries"))
 	}
 	return row.NullTimeField(field).Time
 }
@@ -1022,7 +1022,7 @@ func (row *Row) NullTime(format string, values ...any) sql.NullTime {
 // NullTimeField returns the sql.NullTime value of the field.
 func (row *Row) NullTimeField(field Time) sql.NullTime {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call NullTimeField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullTimeField for static queries"))
 	}
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
@@ -1039,7 +1039,7 @@ func (row *Row) NullTimeField(field Time) sql.NullTime {
 // UUID scans the UUID expression into destPtr.
 func (row *Row) UUID(destPtr any, format string, values ...any) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call UUID for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call UUID for static queries"))
 	}
 	row.uuid(destPtr, Expr(format, values...), 1)
 }
@@ -1047,7 +1047,7 @@ func (row *Row) UUID(destPtr any, format string, values ...any) {
 // UUIDField scans the UUID field into destPtr.
 func (row *Row) UUIDField(destPtr any, field UUID) {
 	if row.queryIsStatic {
-		panic(fmt.Errorf(callsite(1) + "cannot call UUIDField for static queries"))
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call UUIDField for static queries"))
 	}
 	row.uuid(destPtr, field, 1)
 }
@@ -1095,7 +1095,7 @@ func (row *Row) uuid(destPtr any, field UUID, skip int) {
 }
 
 // ColumnMapper defines column mapper function.
-type ColumnMapper = func(context.Context, *Column)
+type ColumnMapper func(context.Context, *Column)
 
 // Column keeps track of what the values mapped to what Field in an
 // InsertQuery or SelectQuery.
@@ -1116,7 +1116,7 @@ type Column struct {
 // Set maps the value to the Field.
 func (col *Column) Set(field Field, value any) {
 	if field == nil {
-		panic(fmt.Errorf(callsite(1) + "setting a nil field"))
+		panic(fmt.Errorf("%s", callsite(1)+"setting a nil field"))
 	}
 	// UPDATE mode
 	if col.isUpdate {
@@ -1126,7 +1126,7 @@ func (col *Column) Set(field Field, value any) {
 	// INSERT mode
 	name := toString(col.dialect, field)
 	if name == "" {
-		panic(fmt.Errorf(callsite(1) + "field name is empty"))
+		panic(fmt.Errorf("%s", callsite(1)+"field name is empty"))
 	}
 	if !col.rowStarted {
 		col.rowStarted = true

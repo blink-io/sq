@@ -581,7 +581,7 @@ func TestRowScan(t *testing.T) {
 						row.Scan(&score1, "score")
 						row.Scan(&score2, "score")
 						if diff := testutil.Diff(score1, int64(score2)); diff != "" {
-							panic(fmt.Errorf(testutil.Callers() + diff))
+							panic(fmt.Errorf("%s", testutil.Callers()+diff))
 						}
 						row.Scan(&price, "price")
 						row.Scan(&name, "name")
@@ -618,7 +618,7 @@ func TestRowScan(t *testing.T) {
 						row.Scan(&score1, "score")
 						row.Scan(&score2, "score")
 						if diff := testutil.Diff(score1, int64(score2)); diff != "" {
-							panic(fmt.Errorf(testutil.Callers() + diff))
+							panic(fmt.Errorf("%s", testutil.Callers()+diff))
 						}
 						row.Scan(&price, "price")
 						row.Scan(&name, "name")
@@ -651,7 +651,7 @@ func TestRowScan(t *testing.T) {
 						row.Scan(&score1, "score")
 						row.Scan(&score2, "score")
 						if diff := testutil.Diff(score1.Int64, int64(score2.Int32)); diff != "" {
-							panic(fmt.Errorf(testutil.Callers() + diff))
+							panic(fmt.Errorf("%s", testutil.Callers()+diff))
 						}
 						row.Scan(&price, "price")
 						row.Scan(&name, "name")

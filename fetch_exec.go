@@ -31,7 +31,7 @@ type Cursor[T any] struct {
 
 // FetchCursor returns a new cursor.
 func FetchCursor[T any](db DB, query Query, rowMapper RowMapper[T]) (*Cursor[T], error) {
-	return fetchCursor[T](context.Background(), db, query, rowMapper, 1)
+	return FetchCursorContext[T](context.Background(), db, query, rowMapper)
 }
 
 // FetchCursorContext is like FetchCursor but additionally requires a context.Context.
@@ -236,12 +236,7 @@ func (cursor *Cursor[T]) Close() error {
 // FetchOne returns the first result from running the given Query on the given
 // DB.
 func FetchOne[T any](db DB, query Query, rowMapper RowMapper[T]) (T, error) {
-	cursor, err := fetchCursor[T](context.Background(), db, query, rowMapper, 1)
-	if err != nil {
-		return *new(T), err
-	}
-	defer closeQuietly(cursor.Close)
-	return cursorResult(cursor)
+	return FetchOneContext[T](context.Background(), db, query, rowMapper)
 }
 
 // FetchOneContext is like FetchOne but additionally requires a context.Context.
@@ -256,12 +251,7 @@ func FetchOneContext[T any](ctx context.Context, db DB, query Query, rowMapper R
 
 // FetchAll returns all results from running the given Query on the given DB.
 func FetchAll[T any](db DB, query Query, rowMapper RowMapper[T]) ([]T, error) {
-	cursor, err := fetchCursor[T](context.Background(), db, query, rowMapper, 1)
-	if err != nil {
-		return nil, err
-	}
-	defer closeQuietly(cursor.Close)
-	return cursorResults(cursor)
+	return FetchAllContext[T](context.Background(), db, query, rowMapper)
 }
 
 // FetchAllContext is like FetchAll but additionally requires a context.Context.
@@ -282,7 +272,7 @@ type CompiledFetch[T any] struct {
 	args      []any
 	params    map[string][]int
 	rowMapper RowMapper[T]
-	// if queryIsStatic is true, the rowMapper doesn't actually know what
+	// if queryIsStatic is true, the rowMapper actually doesn't know what
 	// columns are in the query, and it must be determined at runtime after
 	// running the query.
 	queryIsStatic bool
@@ -719,7 +709,7 @@ func (preparedFetch *PreparedFetch[T]) Close() error {
 
 // Exec executes the given Query on the given DB.
 func Exec(db DB, query Query) (Result, error) {
-	return exec(context.Background(), db, query, 1)
+	return ExecContext(context.Background(), db, query)
 }
 
 // ExecContext is like Exec but additionally requires a context.Context.
@@ -1157,7 +1147,7 @@ func execResult(sqlResult sql.Result, queryStats *QueryStats) (Result, error) {
 // FetchExists returns a boolean indicating if running the given Query on the
 // given DB returned any results.
 func FetchExists(db DB, query Query) (exists bool, err error) {
-	return fetchExists(context.Background(), db, query, 1)
+	return FetchExistsContext(context.Background(), db, query)
 }
 
 // FetchExistsContext is like FetchExists but additionally requires a

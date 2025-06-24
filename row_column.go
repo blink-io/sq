@@ -18,7 +18,7 @@ import (
 )
 
 // RowMapper defines row mapper function.
-type RowMapper[T any] = func(context.Context, *Row) (T, error)
+type RowMapper[T any] = func(context.Context, *Row) T
 
 // Row represents the state of a row after a call to rows.Next().
 type Row struct {
@@ -1095,7 +1095,7 @@ func (row *Row) uuid(destPtr any, field UUID, skip int) {
 }
 
 // ColumnMapper defines column mapper function.
-type ColumnMapper = func(context.Context, *Column) error
+type ColumnMapper = func(context.Context, *Column)
 
 // Column keeps track of what the values mapped to what Field in an
 // InsertQuery or SelectQuery.

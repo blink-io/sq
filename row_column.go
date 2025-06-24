@@ -18,7 +18,7 @@ import (
 )
 
 // RowMapper defines row mapper function.
-type RowMapper[T any] = func(context.Context, *Row) T
+type RowMapper[T any] = func(context.Context, *Row) (T, error)
 
 // Row represents the state of a row after a call to rows.Next().
 type Row struct {

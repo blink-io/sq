@@ -18,7 +18,9 @@ import (
 )
 
 // RowMapper defines row mapper function.
-type RowMapper[T any] func(context.Context, *Row) T
+type (
+	RowMapper[T any] func(context.Context, *Row) T
+)
 
 // Row represents the state of a row after a call to rows.Next().
 type Row struct {
@@ -1157,11 +1159,22 @@ func (col *Column) SetBytes(field Binary, value []byte) { col.Set(field, value) 
 // SetBool maps the bool value to the field.
 func (col *Column) SetBool(field Boolean, value bool) { col.Set(field, value) }
 
-// SetFloat64 maps the float64 value to the field.
+// SetFloat32 maps the float32 value to the field.
+func (col *Column) SetFloat32(field Number, value float32) { col.Set(field, value) }
+
 func (col *Column) SetFloat64(field Number, value float64) { col.Set(field, value) }
 
 // SetInt maps the int value to the field.
 func (col *Column) SetInt(field Number, value int) { col.Set(field, value) }
+
+// SetInt8 maps the int value to the field.
+func (col *Column) SetInt8(field Number, value int8) { col.Set(field, value) }
+
+// SetInt16 maps the int value to the field.
+func (col *Column) SetInt16(field Number, value int16) { col.Set(field, value) }
+
+// SetInt32 maps the int value to the field.
+func (col *Column) SetInt32(field Number, value int32) { col.Set(field, value) }
 
 // SetInt64 maps the int64 value to the field.
 func (col *Column) SetInt64(field Number, value int64) { col.Set(field, value) }

@@ -15,6 +15,8 @@ import (
 
 	"github.com/blink-io/sq/internal/googleuuid"
 	"github.com/blink-io/sq/internal/pqarray"
+
+	"github.com/spf13/cast"
 )
 
 // RowMapper defines row mapper function.
@@ -23,6 +25,7 @@ type (
 )
 
 type (
+	NullBool    = sql.Null[bool]
 	NullInt     = sql.Null[int]
 	NullInt8    = sql.Null[int8]
 	NullInt16   = sql.Null[int16]
@@ -35,8 +38,16 @@ type (
 	NullUint64  = sql.Null[uint64]
 	NullFloat32 = sql.Null[float32]
 	NullFloat64 = sql.Null[float64]
+	NullString  = sql.Null[string]
+	NullTime    = sql.Null[time.Time]
 
-	NumberConstraint = interface {
+	NullNumberType = interface {
+		NullInt | NullInt8 | NullInt16 | NullInt32 | NullInt64
+		NullUint | NullUint16 | NullUint32 | NullUint64 | NullInt64
+		NullFloat32 | NullFloat64
+	}
+
+	NumberType = interface {
 		~int | ~int8 | ~int16 | ~int32 | ~int64 |
 			~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
 			~float32 | ~float64
@@ -146,17 +157,13 @@ func (row *Row) Value(format string, values ...any) any {
 
 // Scan scans the expression into destPtr.
 func (row *Row) Scan(destPtr any, format string, values ...any) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call Scan for static queries"))
-	}
+	markQueryIsStaticPanic(row, "Scan")
 	row.scan(destPtr, Expr(format, values...), 1)
 }
 
 // ScanField scans the field into destPtr.
 func (row *Row) ScanField(destPtr any, field Field) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call ScanField for static queries"))
-	}
+	markQueryIsStaticPanic(row, "ScanField")
 	row.scan(destPtr, field, 1)
 }
 
@@ -164,18 +171,36 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		switch destPtr.(type) {
-		case *bool, *sql.NullBool:
-			row.scanDest = append(row.scanDest, &sql.NullBool{})
-		case *float64, *sql.NullFloat64:
-			row.scanDest = append(row.scanDest, &sql.NullFloat64{})
-		case *int32, *sql.NullInt32:
-			row.scanDest = append(row.scanDest, &sql.NullInt32{})
-		case *int, *int64, *sql.NullInt64:
-			row.scanDest = append(row.scanDest, &sql.NullInt64{})
-		case *string, *sql.NullString:
-			row.scanDest = append(row.scanDest, &sql.NullString{})
-		case *time.Time, *sql.NullTime:
-			row.scanDest = append(row.scanDest, &sql.NullTime{})
+		case *bool, *sql.NullBool, *NullBool:
+			row.scanDest = append(row.scanDest, &NullBool{})
+		case *float32, NullFloat32:
+			row.scanDest = append(row.scanDest, &NullFloat32{})
+		case *float64, *sql.NullFloat64, NullFloat64:
+			row.scanDest = append(row.scanDest, &NullFloat64{})
+		case *int, *NullInt:
+			row.scanDest = append(row.scanDest, &NullInt{})
+		case *int8, *NullInt8:
+			row.scanDest = append(row.scanDest, &NullInt8{})
+		case *int16, *NullInt16:
+			row.scanDest = append(row.scanDest, &NullInt16{})
+		case *int32, *sql.NullInt32, NullInt32:
+			row.scanDest = append(row.scanDest, &NullInt32{})
+		case *int64, *sql.NullInt64, NullInt64:
+			row.scanDest = append(row.scanDest, &NullInt64{})
+		case *uint, *NullUint:
+			row.scanDest = append(row.scanDest, &NullUint{})
+		case *uint8, *NullUint8:
+			row.scanDest = append(row.scanDest, &NullInt8{})
+		case *uint16, *NullUint16:
+			row.scanDest = append(row.scanDest, &NullUint16{})
+		case *uint32, NullUint32:
+			row.scanDest = append(row.scanDest, &NullUint32{})
+		case *uint64, NullUint64:
+			row.scanDest = append(row.scanDest, &NullUint64{})
+		case *string, *sql.NullString, NullString:
+			row.scanDest = append(row.scanDest, &NullString{})
+		case *time.Time, *sql.NullTime, NullTime:
+			row.scanDest = append(row.scanDest, &NullTime{})
 		default:
 			if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
 				panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
@@ -189,43 +214,126 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 	}()
 	switch destPtr := destPtr.(type) {
 	case *bool:
-		scanDest := row.scanDest[row.runningIndex].(*sql.NullBool)
-		*destPtr = scanDest.Bool
+		scanDest := row.scanDest[row.runningIndex].(*NullBool)
+		*destPtr = scanDest.V
 	case *sql.NullBool:
 		scanDest := row.scanDest[row.runningIndex].(*sql.NullBool)
 		*destPtr = *scanDest
+	case *NullBool:
+		scanDest := row.scanDest[row.runningIndex].(*NullBool)
+		*destPtr = *scanDest
+
+	case *float32:
+		scanDest := row.scanDest[row.runningIndex].(*NullFloat32)
+		*destPtr = scanDest.V
+	case *NullFloat32:
+		scanDest := row.scanDest[row.runningIndex].(*NullFloat32)
+		*destPtr = *scanDest
+
 	case *float64:
-		scanDest := row.scanDest[row.runningIndex].(*sql.NullFloat64)
-		*destPtr = scanDest.Float64
+		scanDest := row.scanDest[row.runningIndex].(*NullFloat64)
+		*destPtr = scanDest.V
 	case *sql.NullFloat64:
 		scanDest := row.scanDest[row.runningIndex].(*sql.NullFloat64)
 		*destPtr = *scanDest
+	case *NullFloat64:
+		scanDest := row.scanDest[row.runningIndex].(*NullFloat64)
+		*destPtr = *scanDest
+
 	case *int:
-		scanDest := row.scanDest[row.runningIndex].(*sql.NullInt64)
-		*destPtr = int(scanDest.Int64)
+		scanDest := row.scanDest[row.runningIndex].(*NullInt)
+		*destPtr = scanDest.V
+	case *NullInt:
+		scanDest := row.scanDest[row.runningIndex].(*NullInt)
+		*destPtr = *scanDest
+
+	case *int8:
+		scanDest := row.scanDest[row.runningIndex].(*NullInt8)
+		*destPtr = scanDest.V
+	case *NullInt8:
+		scanDest := row.scanDest[row.runningIndex].(*NullInt8)
+		*destPtr = *scanDest
+
+	case *int16:
+		scanDest := row.scanDest[row.runningIndex].(*NullInt16)
+		*destPtr = scanDest.V
+	case *NullInt16:
+		scanDest := row.scanDest[row.runningIndex].(*NullInt16)
+		*destPtr = *scanDest
+
 	case *int32:
-		scanDest := row.scanDest[row.runningIndex].(*sql.NullInt32)
-		*destPtr = scanDest.Int32
+		scanDest := row.scanDest[row.runningIndex].(*NullInt32)
+		*destPtr = scanDest.V
 	case *sql.NullInt32:
 		scanDest := row.scanDest[row.runningIndex].(*sql.NullInt32)
 		*destPtr = *scanDest
+	case *NullInt32:
+		scanDest := row.scanDest[row.runningIndex].(*NullInt32)
+		*destPtr = *scanDest
+
 	case *int64:
-		scanDest := row.scanDest[row.runningIndex].(*sql.NullInt64)
-		*destPtr = scanDest.Int64
+		scanDest := row.scanDest[row.runningIndex].(*NullInt64)
+		*destPtr = scanDest.V
 	case *sql.NullInt64:
 		scanDest := row.scanDest[row.runningIndex].(*sql.NullInt64)
 		*destPtr = *scanDest
+	case *NullInt64:
+		scanDest := row.scanDest[row.runningIndex].(*NullInt64)
+		*destPtr = *scanDest
+
+	case *uint:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint)
+		*destPtr = scanDest.V
+	case *NullUint:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint)
+		*destPtr = *scanDest
+
+	case *uint8:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint8)
+		*destPtr = scanDest.V
+	case *NullUint8:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint8)
+		*destPtr = *scanDest
+
+	case *uint16:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint16)
+		*destPtr = scanDest.V
+	case *NullUint16:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint16)
+		*destPtr = *scanDest
+
+	case *uint32:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint32)
+		*destPtr = scanDest.V
+	case *NullUint32:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint32)
+		*destPtr = *scanDest
+
+	case *uint64:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint64)
+		*destPtr = scanDest.V
+	case *NullUint64:
+		scanDest := row.scanDest[row.runningIndex].(*NullUint64)
+		*destPtr = *scanDest
+
 	case *string:
-		scanDest := row.scanDest[row.runningIndex].(*sql.NullString)
-		*destPtr = scanDest.String
+		scanDest := row.scanDest[row.runningIndex].(*NullString)
+		*destPtr = scanDest.V
 	case *sql.NullString:
 		scanDest := row.scanDest[row.runningIndex].(*sql.NullString)
 		*destPtr = *scanDest
+	case *NullString:
+		scanDest := row.scanDest[row.runningIndex].(*NullString)
+		*destPtr = *scanDest
+
 	case *time.Time:
-		scanDest := row.scanDest[row.runningIndex].(*sql.NullTime)
-		*destPtr = scanDest.Time
+		scanDest := row.scanDest[row.runningIndex].(*NullTime)
+		*destPtr = scanDest.V
 	case *sql.NullTime:
 		scanDest := row.scanDest[row.runningIndex].(*sql.NullTime)
+		*destPtr = *scanDest
+	case *NullTime:
+		scanDest := row.scanDest[row.runningIndex].(*NullTime)
 		*destPtr = *scanDest
 	default:
 		destValue := reflect.ValueOf(destPtr).Elem()
@@ -237,18 +345,14 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 // Array scans the array expression into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) Array(destPtr any, format string, values ...any) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call Array for static queries"))
-	}
+	markQueryIsStaticPanic(row, "Array")
 	row.array(destPtr, Expr(format, values...), 1)
 }
 
 // ArrayField scans the array field into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) ArrayField(destPtr any, field Array) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call ArrayField for static queries"))
-	}
+	markQueryIsStaticPanic(row, "ArrayField")
 	row.array(destPtr, field, 1)
 }
 
@@ -348,27 +452,16 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 	}
 }
 
-// Bytes returns the []byte value of the expression.
+// Bytes return the []byte value of the expression.
 func (row *Row) Bytes(format string, values ...any) []byte {
 	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
+		index := markNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
-		case int64:
-			panic(fmt.Errorf(callsite(1)+"%d is int64, not []byte", value))
-		case float64:
-			panic(fmt.Errorf(callsite(1)+"%d is float64, not []byte", value))
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not []byte", value))
 		case []byte:
 			return value
 		case string:
 			return []byte(value)
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not []byte", value))
 		case nil:
 			return nil
 		default:
@@ -396,9 +489,7 @@ func (row *Row) Bytes(format string, values ...any) []byte {
 
 // BytesField returns the []byte value of the field.
 func (row *Row) BytesField(field Binary) []byte {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call BytesField for static queries"))
-	}
+	markQueryIsStaticPanic(row, "BytesField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &nullBytes{
@@ -423,10 +514,7 @@ func (row *Row) BytesField(field Binary) []byte {
 // Bool returns the bool value of the expression.
 func (row *Row) Bool(format string, values ...any) bool {
 	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
+		index := markNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case int64:
@@ -437,8 +525,6 @@ func (row *Row) Bool(format string, values ...any) bool {
 				return false
 			}
 			panic(fmt.Errorf(callsite(1)+"%d is int64, not bool", value))
-		case float64:
-			panic(fmt.Errorf(callsite(1)+"%d is float64, not bool", value))
 		case bool:
 			return value
 		case []byte:
@@ -450,63 +536,48 @@ func (row *Row) Bool(format string, values ...any) bool {
 				return false
 			}
 			panic(fmt.Errorf(callsite(1)+"%#v is []byte, not bool", value))
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not bool", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not bool", value))
 		case nil:
 			return false
 		default:
 			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not bool", value))
 		}
 	}
-	return row.NullBoolField(Expr(format, values...)).Bool
+	return row.NullBoolField(Expr(format, values...)).V
 }
 
 // BoolField returns the bool value of the field.
 func (row *Row) BoolField(field Boolean) bool {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call BoolField for static queries"))
-	}
-	return row.NullBoolField(field).Bool
+	markQueryIsStaticPanic(row, "BoolField")
+	return row.NullBoolField(field).V
 }
 
-// NullBool returns the sql.NullBool value of the expression.
-func (row *Row) NullBool(format string, values ...any) sql.NullBool {
+// NullBool returns the NullBool value of the expression.
+func (row *Row) NullBool(format string, values ...any) NullBool {
 	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
+		index := markNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case int64:
 			if value == 1 {
-				return sql.NullBool{Bool: true, Valid: true}
+				return NullBool{V: true, Valid: true}
 			}
 			if value == 0 {
-				return sql.NullBool{Bool: false, Valid: true}
+				return NullBool{V: false, Valid: true}
 			}
 			panic(fmt.Errorf(callsite(1)+"%d is int64, not bool", value))
-		case float64:
-			panic(fmt.Errorf(callsite(1)+"%d is float64, not bool", value))
 		case bool:
-			return sql.NullBool{Bool: value, Valid: true}
+			return NullBool{V: value, Valid: true}
 		case []byte:
 			// Special case: go-mysql-driver returns everything as []byte.
 			if string(value) == "1" {
-				return sql.NullBool{Bool: true, Valid: true}
+				return NullBool{V: true, Valid: true}
 			}
 			if string(value) == "0" {
-				return sql.NullBool{Bool: false, Valid: true}
+				return NullBool{V: false, Valid: true}
 			}
 			panic(fmt.Errorf(callsite(1)+"%d is []byte, not bool", value))
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not bool", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not bool", value))
 		case nil:
-			return sql.NullBool{}
+			return NullBool{}
 		default:
 			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not bool", value))
 		}
@@ -514,36 +585,30 @@ func (row *Row) NullBool(format string, values ...any) sql.NullBool {
 	return row.NullBoolField(Expr(format, values...))
 }
 
-// NullBoolField returns the sql.NullBool value of the field.
-func (row *Row) NullBoolField(field Boolean) sql.NullBool {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullBoolField for static queries"))
-	}
+// NullBoolField returns the NullBool value of the field.
+func (row *Row) NullBoolField(field Boolean) NullBool {
+	markQueryIsStaticPanic(row, "NullBoolField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
-		row.scanDest = append(row.scanDest, &sql.NullBool{})
-		return sql.NullBool{}
+		row.scanDest = append(row.scanDest, &NullBool{})
+		return NullBool{}
 	}
 	defer func() {
 		row.runningIndex++
 	}()
-	scanDest := row.scanDest[row.runningIndex].(*sql.NullBool)
+	scanDest := row.scanDest[row.runningIndex].(*NullBool)
 	return *scanDest
 }
 
 // Enum scans the enum expression into destPtr.
 func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call Enum for static queries"))
-	}
+	markQueryIsStaticPanic(row, "Enum")
 	row.enum(destPtr, Expr(format, values...), 1)
 }
 
 // EnumField scans the enum field into destPtr.
 func (row *Row) EnumField(destPtr Enumeration, field Enum) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call EnumField for static queries"))
-	}
+	markQueryIsStaticPanic(row, "EnumField")
 	row.enum(destPtr, field, 1)
 }
 
@@ -558,7 +623,7 @@ func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 			reflect.String:
-			row.scanDest = append(row.scanDest, &sql.NullString{})
+			row.scanDest = append(row.scanDest, &NullString{})
 		default:
 			panic(fmt.Errorf(callsite(skip+1)+"underlying type of %[1]v is neither an integer or string (%[1]T)", destPtr))
 		}
@@ -567,15 +632,15 @@ func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
 	defer func() {
 		row.runningIndex++
 	}()
-	scanDest := row.scanDest[row.runningIndex].(*sql.NullString)
+	scanDest := row.scanDest[row.runningIndex].(*NullString)
 	names := destPtr.Enumerate()
 	enumIndex := 0
 	destValue := reflect.ValueOf(destPtr).Elem()
 	if scanDest.Valid {
-		enumIndex = getEnumIndex(scanDest.String, names, destValue.Type())
+		enumIndex = getEnumIndex(scanDest.V, names, destValue.Type())
 	}
 	if enumIndex < 0 {
-		panic(fmt.Errorf(callsite(skip+1)+"%q is not a valid %T", scanDest.String, destPtr))
+		panic(fmt.Errorf(callsite(skip+1)+"%q is not a valid %T", scanDest.V, destPtr))
 	}
 	switch destValue.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -583,127 +648,128 @@ func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		destValue.SetUint(uint64(enumIndex))
 	case reflect.String:
-		destValue.SetString(scanDest.String)
+		destValue.SetString(scanDest.V)
 	default:
 	}
 }
 
-func DoNumberRow[T NumberConstraint](row *Row, format string, values ...any) T {
-	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
-		tt := GetType[T]()
-		value := row.values[index]
-		switch value := value.(type) {
-		case T:
-			return value
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not "+tt, value))
-		//case []byte:
-		// Special case: go-mysql-driver returns everything as []byte.
-		//n, err := strconv.ParseFloat(string(value), 64)
-		//if err != nil {
-		//	panic(fmt.Errorf(callsite(1)+"%d is []byte, not float64", value))
-		//}
-		//return n
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not float64", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not float64", value))
-		case nil:
-			return 0
-		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not "+tt, value))
-		}
+func castNumber[T NumberType](value any, valueKind reflect.Kind, convFunc func(i any) (T, error)) T {
+	n, err := convFunc(value)
+	if err != nil {
+		tstr := valueKind.String()
+		panic(fmt.Errorf(callsite(1)+"%d is []byte, not %s", value, tstr))
 	}
-	return DoNullNumberField[T](row, Expr(format, values...)).V
+	return n
 }
 
-// Float64 returns the float64 value of the expression.
-func (row *Row) Float64(format string, values ...any) float64 {
-	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
-		value := row.values[index]
-		switch value := value.(type) {
-		case int64:
-			return float64(value)
-		case float64:
-			return value
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not float64", value))
-		case []byte:
-			// Special case: go-mysql-driver returns everything as []byte.
-			n, err := strconv.ParseFloat(string(value), 64)
-			if err != nil {
-				panic(fmt.Errorf(callsite(1)+"%d is []byte, not float64", value))
+func isIntegerType(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Int,
+		reflect.Int8,
+		reflect.Int16,
+		reflect.Int32,
+		reflect.Int64,
+		reflect.Uint,
+		reflect.Uint8,
+		reflect.Uint16,
+		reflect.Uint32,
+		reflect.Uint64:
+		return true
+	default:
+		return false
+	}
+}
+
+func isFloatType(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Float32,
+		reflect.Float64:
+		return true
+	default:
+		return false
+	}
+}
+
+func handleNumberValue[T NumberType](value any) T {
+	tt := GetType[T]()
+	switch value.(type) {
+	case float32,
+		float64,
+		int,
+		int8,
+		int16,
+		int32,
+		int64,
+		uint,
+		uint8,
+		uint16,
+		uint32,
+		uint64,
+		[]byte: // Special case: go-mysql-driver returns everything as []byte.
+		var vv T
+		vvKind := reflect.TypeOf(vv).Kind()
+		if bytes, ok := value.([]byte); ok {
+			var errv error
+			if isIntegerType(vvKind) {
+				value, errv = strconv.ParseInt(string(bytes), 10, 64)
+			} else if isFloatType(vvKind) {
+				value, errv = strconv.ParseFloat(string(bytes), 64)
 			}
-			return n
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not float64", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not float64", value))
-		case nil:
-			return 0
-		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not float64", value))
-		}
-	}
-	return row.NullFloat64Field(Expr(format, values...)).V
-}
-
-// Float64Field returns the float64 value of the field.
-func (row *Row) Float64Field(field Number) float64 {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call Float64Field for static queries"))
-	}
-	return row.NullFloat64Field(field).V
-}
-
-// NullFloat64 returns the sql.NullFloat64 value of the expression.
-func (row *Row) NullFloat64(format string, values ...any) NullFloat64 {
-	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
-		value := row.values[index]
-		switch value := value.(type) {
-		case int64:
-			return NullFloat64{V: float64(value), Valid: true}
-		case float64:
-			return NullFloat64{V: value, Valid: true}
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not float64", value))
-		case []byte:
-			// Special case: go-mysql-driver returns everything as []byte.
-			n, err := strconv.ParseFloat(string(value), 64)
-			if err != nil {
-				panic(fmt.Errorf(callsite(1)+"%d is []byte, not float64", value))
+			if errv != nil {
+				panic(fmt.Errorf(callsite(1)+"%d is []byte, and cannot convert to %s", value, vvKind.String()))
 			}
-			return NullFloat64{V: n, Valid: true}
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not float64", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not float64", value))
-		case nil:
-			return NullFloat64{}
-		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not float64", value))
 		}
+		switch vvKind {
+		case reflect.Int:
+			return T(castNumber[int](value, reflect.Int, cast.ToIntE))
+		case reflect.Int8:
+			return T(castNumber[int8](value, reflect.Int8, cast.ToInt8E))
+		case reflect.Int16:
+			return T(castNumber[int16](value, reflect.Int16, cast.ToInt16E))
+		case reflect.Int32:
+			return T(castNumber[int32](value, reflect.Int32, cast.ToInt32E))
+		case reflect.Int64:
+			return T(castNumber[int64](value, reflect.Int64, cast.ToInt64E))
+		case reflect.Uint:
+			return T(castNumber[uint](value, reflect.Int, cast.ToUintE))
+		case reflect.Uint8:
+			return T(castNumber[uint8](value, reflect.Int8, cast.ToUint8E))
+		case reflect.Uint16:
+			return T(castNumber[uint16](value, reflect.Int16, cast.ToUint16E))
+		case reflect.Uint32:
+			return T(castNumber[uint32](value, reflect.Int32, cast.ToUint32E))
+		case reflect.Uint64:
+			return T(castNumber[uint64](value, reflect.Int64, cast.ToUint64E))
+		case reflect.Float32:
+			return T(castNumber[float32](value, reflect.Float32, cast.ToFloat32E))
+		case reflect.Float64:
+			return T(castNumber[float64](value, reflect.Float64, cast.ToFloat64E))
+		default:
+			panic(fmt.Errorf(callsite(1)+"%d is []byte and target type %s is unsupported", value, tt))
+		}
+	case bool:
+		panic(fmt.Errorf(callsite(1)+"%v is bool, not "+tt, value))
+	case string:
+		panic(fmt.Errorf(callsite(1)+"%q is string, not float64", value))
+	case time.Time:
+		panic(fmt.Errorf(callsite(1)+"%v is time.Time, not float64", value))
+	case nil:
+		return 0
+	default:
+		panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not "+tt, value))
 	}
-	return row.NullFloat64Field(Expr(format, values...))
 }
 
-func DoNullNumberField[T NumberConstraint](row *Row, field Number) sql.Null[T] {
-	var tt = GetType[T]()
+func NumberValue[T NumberType](row *Row, format string, values ...any) T {
 	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call "+tt+" for static queries"))
+		index := markNoColumnIndexPanic(row, format)
+		return handleNumberValue[T](row.values[index])
 	}
+	return NullNumberField[T](row, Expr(format, values...)).V
+}
+
+func NullNumberField[T NumberType](row *Row, field Number) sql.Null[T] {
+	markQueryIsStaticPanic(row, GetType[T]())
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &sql.Null[T]{})
@@ -716,185 +782,272 @@ func DoNullNumberField[T NumberConstraint](row *Row, field Number) sql.Null[T] {
 	return *scanDest
 }
 
-// NullFloat32Field returns the sql.NullFloat32 value of the field.
-func (row *Row) NullFloat32Field(field Number) NullFloat32 {
-	return DoNullNumberField[float32](row, field)
+// NullNumberValue returns the null number value of the expression.
+func NullNumberValue[T NumberType](row *Row, format string, values ...any) sql.Null[T] {
+	if row.queryIsStatic {
+		index := markNoColumnIndexPanic(row, format)
+		value := row.values[index]
+		switch value.(type) {
+		case nil:
+			return sql.Null[T]{}
+		default:
+			v := NumberValue[T](row, format, values...)
+			return sql.Null[T]{V: v, Valid: true}
+		}
+	}
+	return NullNumberField[T](row, Expr(format, values...))
 }
 
-// NullFloat64Field returns the sql.NullFloat64 value of the field.
+// Float32 returns the float32 value of the expression.
+func (row *Row) Float32(format string, values ...any) float32 {
+	return NumberValue[float32](row, format, values...)
+}
+
+// Float32Field returns the float32 value of the field.
+func (row *Row) Float32Field(field Number) float32 {
+	markQueryIsStaticPanic(row, "Float32Field")
+	return row.NullFloat32Field(field).V
+}
+
+// NullFloat32 returns the NullFloat32 value of the expression.
+func (row *Row) NullFloat32(format string, values ...any) NullFloat32 {
+	return NullNumberValue[float32](row, format, values...)
+}
+
+// NullFloat32Field returns the NullFloat32 value of the field.
+func (row *Row) NullFloat32Field(field Number) NullFloat32 {
+	return NullNumberField[float32](row, field)
+}
+
+// Float64 returns the float64 value of the expression.
+func (row *Row) Float64(format string, values ...any) float64 {
+	return NumberValue[float64](row, format, values...)
+}
+
+// Float64Field returns the float64 value of the field.
+func (row *Row) Float64Field(field Number) float64 {
+	markQueryIsStaticPanic(row, "Float64Field")
+	return row.NullFloat64Field(field).V
+}
+
+// NullFloat64 returns the NullFloat64 value of the expression.
+func (row *Row) NullFloat64(format string, values ...any) NullFloat64 {
+	return NullNumberValue[float64](row, format, values...)
+}
+
+// NullFloat64Field returns the NullFloat64 value of the field.
 func (row *Row) NullFloat64Field(field Number) NullFloat64 {
-	return DoNullNumberField[float64](row, field)
+	return NullNumberField[float64](row, field)
 }
 
 // Int returns the int value of the expression.
 func (row *Row) Int(format string, values ...any) int {
-	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
-		value := row.values[index]
-		switch value := value.(type) {
-		case int64:
-			return int(value)
-		case float64:
-			return int(value)
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not int", value))
-		case []byte:
-			// Special case: go-mysql-driver returns everything as []byte.
-			n, err := strconv.Atoi(string(value))
-			if err != nil {
-				panic(fmt.Errorf(callsite(1)+"%d is []byte, not int", value))
-			}
-			return n
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not int", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not int", value))
-		case nil:
-			return 0
-		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not int", value))
-		}
-	}
-	return int(row.NullInt64Field(Expr(format, values...)).V)
+	return NumberValue[int](row, format, values...)
 }
 
 // IntField returns the int value of the field.
 func (row *Row) IntField(field Number) int {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call IntField for static queries"))
-	}
+	markQueryIsStaticPanic(row, "IntField")
 	return int(row.NullInt64Field(field).V)
 }
 
-// Int64 returns the int64 value of the expression.
-func (row *Row) Int64(format string, values ...any) int64 {
-	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
-		value := row.values[index]
-		switch value := value.(type) {
-		case int64:
-			return int64(value)
-		case float64:
-			return int64(value)
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not int64", value))
-		case []byte:
-			// Special case: go-mysql-driver returns everything as []byte.
-			n, err := strconv.ParseInt(string(value), 10, 64)
-			if err != nil {
-				panic(fmt.Errorf(callsite(1)+"%d is []byte, not int64", value))
-			}
-			return n
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not int64", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not int64", value))
-		case nil:
-			return 0
-		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not int64", value))
-		}
-	}
-	return row.NullInt64Field(Expr(format, values...)).V
+// NullInt returns the NullInt value of the expression.
+func (row *Row) NullInt(format string, values ...any) NullInt {
+	return NullNumberValue[int](row, format, values...)
 }
 
-// Int64Field returns the int64 value of the field.
-func (row *Row) Int64Field(field Number) int64 {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call Int64Field for static queries"))
-	}
-	return row.NullInt64Field(field).V
-}
-
-// NullInt64 returns the sql.NullInt64 value of the expression.
-func (row *Row) NullInt64(format string, values ...any) NullInt64 {
-	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
-		value := row.values[index]
-		switch value := value.(type) {
-		case int64:
-			return NullInt64{V: value, Valid: true}
-		case float64:
-			return NullInt64{V: int64(value), Valid: true}
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not int64", value))
-		case []byte:
-			// Special case: go-mysql-driver returns everything as []byte.
-			n, err := strconv.ParseInt(string(value), 10, 64)
-			if err != nil {
-				panic(fmt.Errorf(callsite(1)+"%d is []byte, not int64", value))
-			}
-			return NullInt64{V: n, Valid: true}
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not int64", value))
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not int64", value))
-		case nil:
-			return NullInt64{}
-		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not int64", value))
-		}
-	}
-	return row.NullInt64Field(Expr(format, values...))
-}
-
-// NullIntField returns the  value of the field.
+// NullIntField returns the int value of the field.
 func (row *Row) NullIntField(field Number) NullInt {
-	return DoNullNumberField[int](row, field)
+	return NullNumberField[int](row, field)
 }
 
-// NullInt8Field returns the NullInt8 value of the field.
+// Int8 returns the int value of the expression.
+func (row *Row) Int8(format string, values ...any) int8 {
+	return NumberValue[int8](row, format, values...)
+}
+
+// Int8Field returns the int value of the field.
+func (row *Row) Int8Field(field Number) int8 {
+	markQueryIsStaticPanic(row, "Int8Field")
+	return NullNumberField[int8](row, field).V
+}
+
+// NullInt8 returns the NullInt8 value of the expression.
+func (row *Row) NullInt8(format string, values ...any) NullInt8 {
+	return NullNumberValue[int8](row, format, values...)
+}
+
+// NullInt8Field returns the int8 value of the field.
 func (row *Row) NullInt8Field(field Number) NullInt8 {
-	return DoNullNumberField[int8](row, field)
+	return NullNumberField[int8](row, field)
+}
+
+// Int16 returns the int value of the expression.
+func (row *Row) Int16(format string, values ...any) int16 {
+	return NumberValue[int16](row, format, values...)
+}
+
+// Int16Field returns the int value of the field.
+func (row *Row) Int16Field(field Number) int16 {
+	markQueryIsStaticPanic(row, "Int16Field")
+	return NullNumberField[int16](row, field).V
+}
+
+// NullInt16 returns the NullInt16 value of the expression.
+func (row *Row) NullInt16(format string, values ...any) NullInt16 {
+	return NullNumberValue[int16](row, format, values...)
 }
 
 // NullInt16Field returns the NullInt16 value of the field.
 func (row *Row) NullInt16Field(field Number) NullInt16 {
-	return DoNullNumberField[int16](row, field)
+	return NullNumberField[int16](row, field)
+}
+
+// Int32 returns the int value of the expression.
+func (row *Row) Int32(format string, values ...any) int32 {
+	return NumberValue[int32](row, format, values...)
+}
+
+// Int32Field returns the int value of the field.
+func (row *Row) Int32Field(field Number) int32 {
+	markQueryIsStaticPanic(row, "Int32Field")
+	return NullNumberField[int32](row, field).V
+}
+
+// NullInt32 returns the NullInt32 value of the expression.
+func (row *Row) NullInt32(format string, values ...any) NullInt32 {
+	return NullNumberValue[int32](row, format, values...)
 }
 
 // NullInt32Field returns the NullInt32 value of the field.
 func (row *Row) NullInt32Field(field Number) NullInt32 {
-	return DoNullNumberField[int32](row, field)
+	return NullNumberField[int32](row, field)
+}
+
+// Int64 returns the int64 value of the expression.
+func (row *Row) Int64(format string, values ...any) int64 {
+	return NumberValue[int64](row, format, values...)
+}
+
+// Int64Field returns the int64 value of the field.
+func (row *Row) Int64Field(field Number) int64 {
+	markQueryIsStaticPanic(row, "Int64Field")
+	return row.NullInt64Field(field).V
+}
+
+// NullInt64 returns the NullInt64 value of the expression.
+func (row *Row) NullInt64(format string, values ...any) NullInt64 {
+	return NullNumberValue[int64](row, format, values...)
 }
 
 // NullInt64Field returns the NullInt64 value of the field.
 func (row *Row) NullInt64Field(field Number) NullInt64 {
-	return DoNullNumberField[int64](row, field)
+	return NullNumberField[int64](row, field)
 }
 
-// NullUintField returns the  value of the field.
+// Uint returns the uint value of the expression.
+func (row *Row) Uint(format string, values ...any) uint {
+	return NumberValue[uint](row, format, values...)
+}
+
+// UintField returns the uint value of the field.
+func (row *Row) UintField(field Number) int {
+	markQueryIsStaticPanic(row, "UintField")
+	return row.NullIntField(field).V
+}
+
+// NullUint returns the NullUint value of the expression.
+func (row *Row) NullUint(format string, values ...any) NullUint {
+	return NullNumberValue[uint](row, format, values...)
+}
+
+// NullUintField returns the uint value of the field.
 func (row *Row) NullUintField(field Number) NullUint {
-	return DoNullNumberField[uint](row, field)
+	return NullNumberField[uint](row, field)
+}
+
+// Uint8 returns the uint8 value of the expression.
+func (row *Row) Uint8(format string, values ...any) uint8 {
+	return NumberValue[uint8](row, format, values...)
+}
+
+// Uint8Field returns the uint8 value of the field.
+func (row *Row) Uint8Field(field Number) int8 {
+	markQueryIsStaticPanic(row, "Uint8Field")
+	return row.NullInt8Field(field).V
+}
+
+// NullUint8 returns the NullUint8 value of the expression.
+func (row *Row) NullUint8(format string, values ...any) NullUint8 {
+	return NullNumberValue[uint8](row, format, values...)
 }
 
 // NullUint8Field returns the NullUint8 value of the field.
 func (row *Row) NullUint8Field(field Number) NullUint8 {
-	return DoNullNumberField[uint8](row, field)
+	return NullNumberField[uint8](row, field)
+}
+
+// Uint16 returns the uint16 value of the expression.
+func (row *Row) Uint16(format string, values ...any) uint16 {
+	return NumberValue[uint16](row, format, values...)
+}
+
+// Uint16Field returns the uint16 value of the field.
+func (row *Row) Uint16Field(field Number) uint16 {
+	markQueryIsStaticPanic(row, "Uint16Field")
+	return row.NullUint16Field(field).V
+}
+
+// NullUint16 returns the NullUint16 value of the expression.
+func (row *Row) NullUint16(format string, values ...any) NullUint16 {
+	return NullNumberValue[uint16](row, format, values...)
 }
 
 // NullUint16Field returns the NullUint16 value of the field.
 func (row *Row) NullUint16Field(field Number) NullUint16 {
-	return DoNullNumberField[uint16](row, field)
+	return NullNumberField[uint16](row, field)
 }
 
-// NullUint32Field returns the NullInt32 value of the field.
+// Uint32 returns the uint32 value of the expression.
+func (row *Row) Uint32(format string, values ...any) uint32 {
+	return NumberValue[uint32](row, format, values...)
+}
+
+// Uint32Field returns the uint32 value of the field.
+func (row *Row) Uint32Field(field Number) uint32 {
+	markQueryIsStaticPanic(row, "Uint32Field")
+	return row.NullUint32Field(field).V
+}
+
+// NullUint32 returns the NullUint32 value of the expression.
+func (row *Row) NullUint32(format string, values ...any) NullUint32 {
+	return NullNumberValue[uint32](row, format, values...)
+}
+
+// NullUint32Field returns the NullUint32 value of the field.
 func (row *Row) NullUint32Field(field Number) NullUint32 {
-	return DoNullNumberField[uint32](row, field)
+	return NullNumberField[uint32](row, field)
+}
+
+// Uint64 returns the uint64 value of the expression.
+func (row *Row) Uint64(format string, values ...any) uint64 {
+	return NumberValue[uint64](row, format, values...)
+}
+
+// Uint64Field returns the uint64 value of the field.
+func (row *Row) Uint64Field(field Number) uint64 {
+	markQueryIsStaticPanic(row, "Uint64Field")
+	return row.NullUint64Field(field).V
+}
+
+// NullUint64 returns the NullUint64 value of the expression.
+func (row *Row) NullUint64(format string, values ...any) NullUint64 {
+	return NullNumberValue[uint64](row, format, values...)
 }
 
 // NullUint64Field returns the NullUint64 value of the field.
 func (row *Row) NullUint64Field(field Number) NullUint64 {
-	return DoNullNumberField[uint64](row, field)
+	return NullNumberField[uint64](row, field)
 }
 
 // JSON scans the JSON expression into destPtr.
@@ -941,10 +1094,7 @@ func (row *Row) json(destPtr any, field JSON, skip int) {
 // String returns the string value of the expression.
 func (row *Row) String(format string, values ...any) string {
 	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
+		index := markNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case int64:
@@ -965,40 +1115,27 @@ func (row *Row) String(format string, values ...any) string {
 			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not string", value))
 		}
 	}
-	return row.NullStringField(Expr(format, values...)).String
+	return row.NullStringField(Expr(format, values...)).V
 }
 
 // StringField returns the string value of the field.
 func (row *Row) StringField(field String) string {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call StringField for static queries"))
-	}
-	return row.NullStringField(field).String
+	markQueryIsStaticPanic(row, "StringField")
+	return row.NullStringField(field).V
 }
 
-// NullString returns the sql.NullString value of the expression.
-func (row *Row) NullString(format string, values ...any) sql.NullString {
+// NullString returns the NullString value of the expression.
+func (row *Row) NullString(format string, values ...any) NullString {
 	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
+		index := markNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
-		case int64:
-			panic(fmt.Errorf(callsite(1)+"%d is int64, not string", value))
-		case float64:
-			panic(fmt.Errorf(callsite(1)+"%d is float64, not string", value))
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not string", value))
 		case []byte:
-			return sql.NullString{String: string(value), Valid: true}
+			return NullString{V: string(value), Valid: true}
 		case string:
-			return sql.NullString{String: value, Valid: true}
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not string", value))
+			return NullString{V: value, Valid: true}
 		case nil:
-			return sql.NullString{}
+			return NullString{}
 		default:
 			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not string", value))
 		}
@@ -1006,20 +1143,18 @@ func (row *Row) NullString(format string, values ...any) sql.NullString {
 	return row.NullStringField(Expr(format, values...))
 }
 
-// NullStringField returns the sql.NullString value of the field.
-func (row *Row) NullStringField(field String) sql.NullString {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullStringField for static queries"))
-	}
+// NullStringField returns the NullString value of the field.
+func (row *Row) NullStringField(field String) NullString {
+	markQueryIsStaticPanic(row, "NullStringField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
-		row.scanDest = append(row.scanDest, &sql.NullString{})
-		return sql.NullString{}
+		row.scanDest = append(row.scanDest, &NullString{})
+		return NullString{}
 	}
 	defer func() {
 		row.runningIndex++
 	}()
-	scanDest := row.scanDest[row.runningIndex].(*sql.NullString)
+	scanDest := row.scanDest[row.runningIndex].(*NullString)
 	return *scanDest
 }
 
@@ -1039,18 +1174,9 @@ var sqliteTimestampFormats = []string{
 // Time returns the time.Time value of the expression.
 func (row *Row) Time(format string, values ...any) time.Time {
 	if row.queryIsStatic {
-		index, ok := row.columnIndex[format]
-		if !ok {
-			panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
-		}
+		index := markNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
-		case int64:
-			panic(fmt.Errorf(callsite(1)+"%d is int64, not time.Time", value))
-		case float64:
-			panic(fmt.Errorf(callsite(1)+"%d is float64, not time.Time", value))
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not time.Time", value))
 		case []byte:
 			// Special case: go-mysql-driver returns everything as []byte.
 			s := strings.TrimSuffix(string(value), "Z")
@@ -1060,8 +1186,6 @@ func (row *Row) Time(format string, values ...any) time.Time {
 				}
 			}
 			panic(fmt.Errorf(callsite(1)+"%d is []byte, not time.Time", value))
-		case string:
-			panic(fmt.Errorf(callsite(1)+"%q is string, not time.Time", value))
 		case time.Time:
 			return value
 		case nil:
@@ -1070,19 +1194,17 @@ func (row *Row) Time(format string, values ...any) time.Time {
 			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not time.Time", value))
 		}
 	}
-	return row.NullTimeField(Expr(format, values...)).Time
+	return row.NullTimeField(Expr(format, values...)).V
 }
 
 // TimeField returns the time.Time value of the field.
 func (row *Row) TimeField(field Time) time.Time {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call TimeField for static queries"))
-	}
-	return row.NullTimeField(field).Time
+	markQueryIsStaticPanic(row, "TimeField")
+	return row.NullTimeField(field).V
 }
 
-// NullTime returns the sql.NullTime value of the expression.
-func (row *Row) NullTime(format string, values ...any) sql.NullTime {
+// NullTime returns the NullTime value of the expression.
+func (row *Row) NullTime(format string, values ...any) NullTime {
 	if row.queryIsStatic {
 		index, ok := row.columnIndex[format]
 		if !ok {
@@ -1090,27 +1212,21 @@ func (row *Row) NullTime(format string, values ...any) sql.NullTime {
 		}
 		value := row.values[index]
 		switch value := value.(type) {
-		case int64:
-			panic(fmt.Errorf(callsite(1)+"%d is int64, not time.Time", value))
-		case float64:
-			panic(fmt.Errorf(callsite(1)+"%d is float64, not time.Time", value))
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not time.Time", value))
 		case []byte:
 			// Special case: go-mysql-driver returns everything as []byte.
 			s := strings.TrimSuffix(string(value), "Z")
 			for _, format := range sqliteTimestampFormats {
 				if t, err := time.ParseInLocation(format, s, time.UTC); err == nil {
-					return sql.NullTime{Time: t, Valid: true}
+					return NullTime{V: t, Valid: true}
 				}
 			}
 			panic(fmt.Errorf(callsite(1)+"%d is []byte, not time.Time", value))
 		case string:
 			panic(fmt.Errorf(callsite(1)+"%q is string, not time.Time", value))
 		case time.Time:
-			return sql.NullTime{Time: value, Valid: true}
+			return NullTime{V: value, Valid: true}
 		case nil:
-			return sql.NullTime{}
+			return NullTime{}
 		default:
 			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not time.Time", value))
 		}
@@ -1118,20 +1234,18 @@ func (row *Row) NullTime(format string, values ...any) sql.NullTime {
 	return row.NullTimeField(Expr(format, values...))
 }
 
-// NullTimeField returns the sql.NullTime value of the field.
-func (row *Row) NullTimeField(field Time) sql.NullTime {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call NullTimeField for static queries"))
-	}
+// NullTimeField returns the NullTime value of the field.
+func (row *Row) NullTimeField(field Time) NullTime {
+	markQueryIsStaticPanic(row, "NullTimeField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
-		row.scanDest = append(row.scanDest, &sql.NullTime{})
-		return sql.NullTime{}
+		row.scanDest = append(row.scanDest, &NullTime{})
+		return NullTime{}
 	}
 	defer func() {
 		row.runningIndex++
 	}()
-	scanDest := row.scanDest[row.runningIndex].(*sql.NullTime)
+	scanDest := row.scanDest[row.runningIndex].(*NullTime)
 	return *scanDest
 }
 
@@ -1145,9 +1259,7 @@ func (row *Row) UUID(destPtr any, format string, values ...any) {
 
 // UUIDField scans the UUID field into destPtr.
 func (row *Row) UUIDField(destPtr any, field UUID) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call UUIDField for static queries"))
-	}
+	markQueryIsStaticPanic(row, "UUIDField")
 	row.uuid(destPtr, field, 1)
 }
 
@@ -1213,7 +1325,7 @@ type Column struct {
 }
 
 // Set maps the value to the Field.
-func (col *Column) Set(field Field, value any) {
+func (col *Column) set(field Field, value any) {
 	if field == nil {
 		panic(fmt.Errorf("%s", callsite(1)+"setting a nil field"))
 	}
@@ -1250,67 +1362,70 @@ func (col *Column) Set(field Field, value any) {
 	col.rowValues[last] = append(col.rowValues[last], value)
 }
 
+// SetAny maps any value to the field.
+func (col *Column) SetAny(field Binary, value any) { col.set(field, value) }
+
 // SetBytes maps the []byte value to the field.
-func (col *Column) SetBytes(field Binary, value []byte) { col.Set(field, value) }
+func (col *Column) SetBytes(field Binary, value []byte) { col.set(field, value) }
 
 // SetBool maps the bool value to the field.
-func (col *Column) SetBool(field Boolean, value bool) { col.Set(field, value) }
+func (col *Column) SetBool(field Boolean, value bool) { col.set(field, value) }
 
 // SetFloat32 maps the float32 value to the field.
-func (col *Column) SetFloat32(field Number, value float32) { col.Set(field, value) }
+func (col *Column) SetFloat32(field Number, value float32) { col.set(field, value) }
 
-func (col *Column) SetFloat64(field Number, value float64) { col.Set(field, value) }
+func (col *Column) SetFloat64(field Number, value float64) { col.set(field, value) }
 
 // SetUint maps the uint value to the field.
-func (col *Column) SetUint(field Number, value uint) { col.Set(field, value) }
+func (col *Column) SetUint(field Number, value uint) { col.set(field, value) }
 
 // SetUint8 maps the int value to the field.
-func (col *Column) SetUint8(field Number, value uint8) { col.Set(field, value) }
+func (col *Column) SetUint8(field Number, value uint8) { col.set(field, value) }
 
 // SetUint16 maps the int value to the field.
-func (col *Column) SetUint16(field Number, value uint16) { col.Set(field, value) }
+func (col *Column) SetUint16(field Number, value uint16) { col.set(field, value) }
 
 // SetUint32 maps the int value to the field.
-func (col *Column) SetUint32(field Number, value uint32) { col.Set(field, value) }
+func (col *Column) SetUint32(field Number, value uint32) { col.set(field, value) }
 
 // SetUint64 maps the uint64 value to the field.
-func (col *Column) SetUint64(field Number, value uint64) { col.Set(field, value) }
+func (col *Column) SetUint64(field Number, value uint64) { col.set(field, value) }
 
 // SetInt maps the int value to the field.
-func (col *Column) SetInt(field Number, value int) { col.Set(field, value) }
+func (col *Column) SetInt(field Number, value int) { col.set(field, value) }
 
 // SetInt8 maps the int value to the field.
-func (col *Column) SetInt8(field Number, value int8) { col.Set(field, value) }
+func (col *Column) SetInt8(field Number, value int8) { col.set(field, value) }
 
 // SetInt16 maps the int value to the field.
-func (col *Column) SetInt16(field Number, value int16) { col.Set(field, value) }
+func (col *Column) SetInt16(field Number, value int16) { col.set(field, value) }
 
 // SetInt32 maps the int value to the field.
-func (col *Column) SetInt32(field Number, value int32) { col.Set(field, value) }
+func (col *Column) SetInt32(field Number, value int32) { col.set(field, value) }
 
 // SetInt64 maps the int64 value to the field.
-func (col *Column) SetInt64(field Number, value int64) { col.Set(field, value) }
+func (col *Column) SetInt64(field Number, value int64) { col.set(field, value) }
 
 // SetString maps the string value to the field.
-func (col *Column) SetString(field String, value string) { col.Set(field, value) }
+func (col *Column) SetString(field String, value string) { col.set(field, value) }
 
 // SetTime maps the time.Time value to the field.
-func (col *Column) SetTime(field Time, value time.Time) { col.Set(field, value) }
+func (col *Column) SetTime(field Time, value time.Time) { col.set(field, value) }
 
 // SetArray maps the array value to the field. The value should be []string,
 // []int, []int64, []int32, []float64, []float32 or []bool.
-func (col *Column) SetArray(field Array, value any) { col.Set(field, ArrayValue(value)) }
+func (col *Column) SetArray(field Array, value any) { col.set(field, ArrayValue(value)) }
 
 // SetEnum maps the enum value to the field.
-func (col *Column) SetEnum(field Enum, value Enumeration) { col.Set(field, EnumValue(value)) }
+func (col *Column) SetEnum(field Enum, value Enumeration) { col.set(field, EnumValue(value)) }
 
 // SetJSON maps the JSON value to the field. The value should be able to be
 // convertible to JSON using json.Marshal.
-func (col *Column) SetJSON(field JSON, value any) { col.Set(field, JSONValue(value)) }
+func (col *Column) SetJSON(field JSON, value any) { col.set(field, JSONValue(value)) }
 
 // SetUUID maps the UUID value to the field. The value's type or underlying
 // type should be [16]byte.
-func (col *Column) SetUUID(field UUID, value any) { col.Set(field, UUIDValue(value)) }
+func (col *Column) SetUUID(field UUID, value any) { col.set(field, UUIDValue(value)) }
 
 func callsite(skip int) string {
 	_, file, line, ok := runtime.Caller(skip + 1)
@@ -1376,5 +1491,19 @@ func (n *nullBytes) Value() (driver.Value, error) {
 		return string(buf[:]), nil
 	default:
 		return n.bytes, nil
+	}
+}
+
+func markNoColumnIndexPanic(row *Row, format string) int {
+	index, ok := row.columnIndex[format]
+	if !ok {
+		panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
+	}
+	return index
+}
+
+func markQueryIsStaticPanic(row *Row, target string) {
+	if row.queryIsStatic {
+		panic(fmt.Errorf("%s", callsite(1)+"cannot call "+target+" for static queries"))
 	}
 }

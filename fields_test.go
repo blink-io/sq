@@ -61,23 +61,23 @@ func TestArrayField(t *testing.T) {
 		description: "IsNotNull", item: field.IsNotNull(),
 		wantQuery: "tbl.field IS NOT NULL",
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
-		description: "Set", item: field.SetArray([]int{1, 2, 3}),
+		description: "set", item: field.SetArray([]int{1, 2, 3}),
 		wantQuery: "field = ?",
 		wantArgs:  []any{`[1,2,3]`},
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}}
 
@@ -125,19 +125,19 @@ func TestBinaryField(t *testing.T) {
 		description: "NeBytes", item: field.NeBytes([]byte{0xff, 0xff}),
 		wantQuery: "tbl.field <> ?", wantArgs: []any{[]byte{0xff, 0xff}},
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}, {
 		description: "SetBytes", item: field.SetBytes([]byte{0xff, 0xff}),
@@ -188,19 +188,19 @@ func TestBooleanField(t *testing.T) {
 		description: "NeBytes", item: field.NeBool(true),
 		wantQuery: "tbl.field <> ?", wantArgs: []any{true},
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}, {
 		description: "SetBool", item: field.SetBool(true),
@@ -266,19 +266,19 @@ func TestCustomField(t *testing.T) {
 		description: "Expr", item: field.Expr("&& ARRAY[1, 2, 3]"),
 		wantQuery: "tbl.field && ARRAY[1, 2, 3]",
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set Self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set Self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}}
 
@@ -328,7 +328,7 @@ func TestEnumField(t *testing.T) {
 		wantQuery: "tbl.field <> ?",
 		wantArgs:  []any{"Monday"},
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
 		description: "SetEnum", item: field.Set(Monday),
@@ -338,13 +338,13 @@ func TestEnumField(t *testing.T) {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}}
 
@@ -379,34 +379,34 @@ func TestJSONField(t *testing.T) {
 		description: "IsNotNull", item: field.IsNotNull(),
 		wantQuery: "tbl.field IS NOT NULL",
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
-		description: "Set Map", item: field.Set(map[string]any{
+		description: "set Map", item: field.Set(map[string]any{
 			"name":  "Name",
 			"level": 88,
 		}),
 		wantQuery: "field = ?",
 		wantArgs:  []any{`{"level":88,"name":"Name"}`},
 	}, {
-		description: "Set Slice", item: field.Set([]int{1, 2, 3}),
+		description: "set Slice", item: field.Set([]int{1, 2, 3}),
 		wantQuery: "field = ?",
 		wantArgs:  []any{`[1,2,3]`},
 	}, {
-		description: "Set", item: field.SetJSON([]int{1, 2, 3}),
+		description: "set", item: field.SetJSON([]int{1, 2, 3}),
 		wantQuery: "field = ?",
 		wantArgs:  []any{`[1,2,3]`},
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}}
 
@@ -520,19 +520,19 @@ func TestNumberField(t *testing.T) {
 		description: "GeFloat64", item: field.GeFloat64(7.11),
 		wantQuery: "tbl.field >= ?", wantArgs: []any{float64(7.11)},
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}, {
 		description: "SetInt", item: field.SetInt(3),
@@ -631,19 +631,19 @@ func TestStringField(t *testing.T) {
 		description: "NotILikeString", item: field.NotILikeString("lorem%"),
 		wantQuery: "tbl.field NOT ILIKE ?", wantArgs: []any{"lorem%"},
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}, {
 		description: "SetString", item: field.SetString("lorem ipsum"),
@@ -732,19 +732,19 @@ func TestTimeField(t *testing.T) {
 		description: "GeTime", item: field.GeTime(zeroTime),
 		wantQuery: "tbl.field >= ?", wantArgs: []any{zeroTime},
 	}, {
-		description: "Set", item: field.Set(Expr("NULL")),
+		description: "set", item: field.Set(Expr("NULL")),
 		wantQuery: "field = NULL",
 	}, {
 		description: "Setf", item: field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery: "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
+		description: "set EXCLUDED", item: field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery: "field = EXCLUDED.field",
 	}, {
-		description: "Set self", item: field.Set(field), dialect: DialectMySQL,
+		description: "set self", item: field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias", item: field.Set(field.WithPrefix("new")),
+		description: "set with alias", item: field.Set(field.WithPrefix("new")),
 		wantQuery: "field = new.field",
 	}, {
 		description: "SetTime", item: field.SetTime(zeroTime),
@@ -973,7 +973,7 @@ func TestUUIDField(t *testing.T) {
 		wantQuery: "tbl.field <> ?",
 		wantArgs:  []any{"ffffffff-ffff-ffff-ffff-ffffffffffff"},
 	}, {
-		description: "Set",
+		description: "set",
 		item: func() any {
 			id, err := uuid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff")
 			if err != nil {
@@ -999,19 +999,19 @@ func TestUUIDField(t *testing.T) {
 		item:        field.Setf("VALUES({})", field.WithPrefix("")),
 		wantQuery:   "field = VALUES(field)",
 	}, {
-		description: "Set EXCLUDED",
+		description: "set EXCLUDED",
 		item:        field.Set(field.WithPrefix("EXCLUDED")),
 		wantQuery:   "field = EXCLUDED.field",
 	}, {
-		description: "Set self",
+		description: "set self",
 		item:        field.Set(field), dialect: DialectMySQL,
 		wantQuery: "tbl.field = tbl.field",
 	}, {
-		description: "Set with alias",
+		description: "set with alias",
 		item:        field.Set(field.WithPrefix("new")),
 		wantQuery:   "field = new.field",
 	}, {
-		description: "Set id",
+		description: "set id",
 		item: func() any {
 			id, err := uuid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff")
 			if err != nil {

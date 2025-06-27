@@ -390,24 +390,24 @@ func TestRow(t *testing.T) {
 			// Insert NULLs.
 			_, err = Exec(Log(db), InsertInto(TABLE00).
 				ColumnValues(func(ctx context.Context, col *Column) {
-					col.Set(TABLE00.UUID, nil)
-					col.Set(TABLE00.DATA, nil)
-					col.Set(TABLE00.COLOR, nil)
-					col.Set(TABLE00.DIRECTION, nil)
-					col.Set(TABLE00.WEEKDAY, nil)
-					col.Set(TABLE00.TEXT_ARRAY, nil)
-					col.Set(TABLE00.INT_ARRAY, nil)
-					col.Set(TABLE00.INT64_ARRAY, nil)
-					col.Set(TABLE00.INT32_ARRAY, nil)
-					col.Set(TABLE00.FLOAT64_ARRAY, nil)
-					col.Set(TABLE00.FLOAT32_ARRAY, nil)
-					col.Set(TABLE00.BOOL_ARRAY, nil)
-					col.Set(TABLE00.BYTES, nil)
-					col.Set(TABLE00.IS_ACTIVE, nil)
-					col.Set(TABLE00.PRICE, nil)
-					col.Set(TABLE00.SCORE, nil)
-					col.Set(TABLE00.NAME, nil)
-					col.Set(TABLE00.UPDATED_AT, nil)
+					col.set(TABLE00.UUID, nil)
+					col.set(TABLE00.DATA, nil)
+					col.set(TABLE00.COLOR, nil)
+					col.set(TABLE00.DIRECTION, nil)
+					col.set(TABLE00.WEEKDAY, nil)
+					col.set(TABLE00.TEXT_ARRAY, nil)
+					col.set(TABLE00.INT_ARRAY, nil)
+					col.set(TABLE00.INT64_ARRAY, nil)
+					col.set(TABLE00.INT32_ARRAY, nil)
+					col.set(TABLE00.FLOAT64_ARRAY, nil)
+					col.set(TABLE00.FLOAT32_ARRAY, nil)
+					col.set(TABLE00.BOOL_ARRAY, nil)
+					col.set(TABLE00.BYTES, nil)
+					col.set(TABLE00.IS_ACTIVE, nil)
+					col.set(TABLE00.PRICE, nil)
+					col.set(TABLE00.SCORE, nil)
+					col.set(TABLE00.NAME, nil)
+					col.set(TABLE00.UPDATED_AT, nil)
 				}).
 				SetDialect(tt.dialect),
 			)
@@ -550,12 +550,12 @@ func TestRowScan(t *testing.T) {
 				InsertTable: Expr("table01"),
 				ColumnMapper: func(ctx context.Context, col *Column) {
 					for _, value := range table01Values {
-						col.Set(Expr("id"), value[0])
-						col.Set(Expr("score"), value[1])
-						col.Set(Expr("price"), value[2])
-						col.Set(Expr("name"), value[3])
-						col.Set(Expr("is_active"), value[4])
-						col.Set(Expr("updated_at"), value[5])
+						col.set(Expr("id"), value[0])
+						col.set(Expr("score"), value[1])
+						col.set(Expr("price"), value[2])
+						col.set(Expr("name"), value[3])
+						col.set(Expr("is_active"), value[4])
+						col.set(Expr("updated_at"), value[5])
 					}
 				},
 			})
@@ -640,24 +640,24 @@ func TestRowScan(t *testing.T) {
 				gotValue, err := FetchOne(db,
 					Queryf("SELECT {*} FROM table01 WHERE id IS NULL").SetDialect(tt.dialect),
 					func(ctx context.Context, row *Row) []any {
-						var id sql.NullInt64
-						var score1 sql.NullInt64
-						var score2 sql.NullInt32
-						var price sql.NullFloat64
-						var name sql.NullString
-						var isActive sql.NullBool
-						var updatedAt sql.NullTime
+						var id NullInt64
+						var score1 NullInt64
+						var score2 NullInt32
+						var price NullFloat64
+						var name NullString
+						var isActive NullBool
+						var updatedAt NullTime
 						row.Scan(&id, "id")
 						row.Scan(&score1, "score")
 						row.Scan(&score2, "score")
-						if diff := testutil.Diff(score1.Int64, int64(score2.Int32)); diff != "" {
+						if diff := testutil.Diff(score1.V, int64(score2.V)); diff != "" {
 							panic(fmt.Errorf("%s", testutil.Callers()+diff))
 						}
 						row.Scan(&price, "price")
 						row.Scan(&name, "name")
 						row.Scan(&isActive, "is_active")
 						row.Scan(&updatedAt, "updated_at")
-						return []any{int(id.Int64), score1.Int64, price.Float64, name.String, isActive.Bool, updatedAt.Time}
+						return []any{int(id.V), score1.V, price.V, name.V, isActive.V, updatedAt.V}
 					},
 				)
 				if err != nil {
@@ -676,6 +676,9 @@ func TestRowScan(t *testing.T) {
 					func(ctx context.Context, row *Row) []any {
 						return []any{
 							row.Int("id"),
+							row.Uint32("score"),
+							row.Uint64("score"),
+							row.Int32("score"),
 							row.Int64("score"),
 							row.Float64("price"),
 							row.String("name"),
@@ -688,9 +691,9 @@ func TestRowScan(t *testing.T) {
 					t.Fatal(testutil.Callers(), err)
 				}
 				wantValues := [][]any{
-					{123, int64(123), float64(123), "abc", true, time.Unix(123, 0).UTC()},
-					{456, int64(456), float64(456), "def", true, time.Unix(456, 0).UTC()},
-					{789, int64(789), float64(789), "ghi", true, time.Unix(789, 0).UTC()},
+					{123, uint32(123), uint64(123), int32(123), int64(123), float64(123), "abc", true, time.Unix(123, 0).UTC()},
+					{456, uint32(456), uint64(456), int32(456), int64(456), float64(456), "def", true, time.Unix(456, 0).UTC()},
+					{789, uint32(789), uint64(789), int32(789), int64(789), float64(789), "ghi", true, time.Unix(789, 0).UTC()},
 				}
 				if diff := testutil.Diff(gotValues, wantValues); diff != "" {
 					t.Error(testutil.Callers(), diff)
@@ -773,7 +776,7 @@ func TestRowScan(t *testing.T) {
 				if err != nil {
 					t.Fatal(testutil.Callers(), err)
 				}
-				wantValues := []any{sql.NullInt64{}, sql.NullFloat64{}, sql.NullString{}, sql.NullBool{}, sql.NullTime{}}
+				wantValues := []any{NullInt64{}, NullFloat64{}, NullString{}, NullBool{}, NullTime{}}
 				if diff := testutil.Diff(gotValue, wantValues); diff != "" {
 					t.Error(testutil.Callers(), diff)
 				}

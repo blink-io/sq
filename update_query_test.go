@@ -39,7 +39,7 @@ func TestSQLiteUpdateQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Set", func(t *testing.T) {
+	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 		var tt TestTable
 		tt.item = SQLite.
@@ -141,7 +141,7 @@ func TestPostgresUpdateQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Set", func(t *testing.T) {
+	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 		var tt TestTable
 		tt.item = Postgres.
@@ -245,7 +245,7 @@ func TestMySQLUpdateQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Set", func(t *testing.T) {
+	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 		var tt TestTable
 		tt.item = MySQL.
@@ -349,7 +349,7 @@ func TestSQLServerUpdateQuery(t *testing.T) {
 		}
 	})
 
-	t.Run("Set", func(t *testing.T) {
+	t.Run("set", func(t *testing.T) {
 		t.Parallel()
 		var tt TestTable
 		tt.item = SQLServer.
@@ -428,9 +428,9 @@ func TestUpdateQuery(t *testing.T) {
 
 	f1, f2, f3 := Expr("f1"), Expr("f2"), Expr("f3")
 	columMapper := func(ctx context.Context, col *Column) {
-		col.Set(f1, 1)
-		col.Set(f2, 2)
-		col.Set(f3, 3)
+		col.set(f1, 1)
+		col.set(f2, 2)
+		col.set(f3, 3)
 	}
 
 	t.Run("PolicyTable", func(t *testing.T) {

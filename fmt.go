@@ -205,7 +205,7 @@ func QuoteIdentifier(dialect string, identifier string) string {
 	default:
 		for i, char := range identifier {
 			if i == 0 && (char >= '0' && char <= '9') {
-				// first character cannot be a number
+				// the first character cannot be a number
 				needsQuoting = true
 				break
 			}
@@ -215,7 +215,7 @@ func QuoteIdentifier(dialect string, identifier string) string {
 			// If there are capital letters, the identifier is quoted to preserve
 			// capitalization information (because databases treat capital letters
 			// differently based on their dialect or configuration).
-			// If the character is anything else, we also quote. In general there
+			// If the character is anything else, we also quote. In general, there
 			// may be some special characters that are allowed in unquoted
 			// identifiers (e.g. '$'), but different databases allow different
 			// things. We only recognize _a-z0-9 as the true standard.
@@ -970,8 +970,53 @@ func IntParam(name string, num int) NumberParameter {
 	return NumberParameter{Name: name, Value: num}
 }
 
+// Int8Param creates a new NumberParameter from the int8 value.
+func Int8Param(name string, num int8) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// Int16Param creates a new NumberParameter from the int16 value.
+func Int16Param(name string, num int16) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// Int32Param creates a new NumberParameter from the int32 value.
+func Int32Param(name string, num int32) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
 // Int64Param creates a new NumberParameter from the int64 value.
 func Int64Param(name string, num int64) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// UintParam creates a new NumberParameter from the uint value.
+func UintParam(name string, num uint) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// Uint8Param creates a new NumberParameter from the int8 value.
+func Uint8Param(name string, num uint8) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// Uint16Param creates a new NumberParameter from the int16 value.
+func Uint16Param(name string, num uint16) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// Uint32Param creates a new NumberParameter from the uint32 value.
+func Uint32Param(name string, num uint32) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// Uint64Param creates a new NumberParameter from the uint64 value.
+func Uint64Param(name string, num uint64) NumberParameter {
+	return NumberParameter{Name: name, Value: num}
+}
+
+// Float32Param creates a new NumberParameter from the float32 value.
+func Float32Param(name string, num float32) NumberParameter {
 	return NumberParameter{Name: name, Value: num}
 }
 

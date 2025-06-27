@@ -496,9 +496,9 @@ func TestInsertQuery(t *testing.T) {
 
 	f1, f2, f3 := Expr("f1"), Expr("f2"), Expr("f3")
 	columnMapper := func(ctx context.Context, col *Column) {
-		col.Set(f1, 1)
-		col.Set(f2, 2)
-		col.Set(f3, 3)
+		col.set(f1, 1)
+		col.set(f2, 2)
+		col.set(f3, 3)
 	}
 
 	notOKTests := []TestTable{{

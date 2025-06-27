@@ -259,10 +259,10 @@ func TestCompiledFetchExec(t *testing.T) {
 	compiledExec, err := CompileExec(SQLite.
 		InsertInto(ACTOR).
 		ColumnValues(func(ctx context.Context, col *Column) {
-			col.Set(ACTOR.ACTOR_ID, IntParam("actor_id", 0))
-			col.Set(ACTOR.FIRST_NAME, StringParam("first_name", ""))
-			col.Set(ACTOR.LAST_NAME, StringParam("last_name", ""))
-			col.Set(ACTOR.LAST_UPDATE, TimeParam("last_update", time.Time{}))
+			col.set(ACTOR.ACTOR_ID, IntParam("actor_id", 0))
+			col.set(ACTOR.FIRST_NAME, StringParam("first_name", ""))
+			col.set(ACTOR.LAST_NAME, StringParam("last_name", ""))
+			col.set(ACTOR.LAST_UPDATE, TimeParam("last_update", time.Time{}))
 		}),
 	)
 	if err != nil {
@@ -363,10 +363,10 @@ func TestPreparedFetchExec(t *testing.T) {
 	preparedExec, err := PrepareExec(Log(db), SQLite.
 		InsertInto(ACTOR).
 		ColumnValues(func(ctx context.Context, col *Column) {
-			col.Set(ACTOR.ACTOR_ID, IntParam("actor_id", 0))
-			col.Set(ACTOR.FIRST_NAME, StringParam("first_name", ""))
-			col.Set(ACTOR.LAST_NAME, StringParam("last_name", ""))
-			col.Set(ACTOR.LAST_UPDATE, TimeParam("last_update", time.Time{}))
+			col.set(ACTOR.ACTOR_ID, IntParam("actor_id", 0))
+			col.set(ACTOR.FIRST_NAME, StringParam("first_name", ""))
+			col.set(ACTOR.LAST_NAME, StringParam("last_name", ""))
+			col.set(ACTOR.LAST_UPDATE, TimeParam("last_update", time.Time{}))
 		}),
 	)
 	if err != nil {

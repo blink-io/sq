@@ -358,7 +358,12 @@ func (l *slogger) LogSettings(ctx context.Context, settings *LogSettings) {
 }
 
 func (l *slogger) LogQuery(ctx context.Context, stats QueryStats) {
+	var execution string = "[OK]"
+	if stats.Err != nil {
+		execution = "[FAIL]"
+	}
 	attrs := []slog.Attr{
+		slog.String("execution", execution),
 		slog.String("dialect", stats.Dialect),
 		slog.String("query", stats.Query),
 		slog.Time("started_at", stats.StartedAt),

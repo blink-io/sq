@@ -1362,8 +1362,8 @@ func (col *Column) set(field Field, value any) {
 	col.rowValues[last] = append(col.rowValues[last], value)
 }
 
-// SetAny maps any value to the field.
-func (col *Column) SetAny(field Field, value any) { col.set(field, value) }
+// Set maps any value to the field.
+func (col *Column) Set(field Field, value any) { col.set(field, value) }
 
 // SetBytes maps the []byte value to the field.
 func (col *Column) SetBytes(field Binary, value []byte) { col.set(field, value) }

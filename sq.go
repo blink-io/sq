@@ -341,6 +341,26 @@ func (v *arrayValue) Value() (driver.Value, error) {
 	switch v.value.(type) {
 	case []string, []int, []int64, []int32, []float64, []float32, []bool:
 		break
+	case []map[string]any:
+		mm := v.value.([]map[string]any)
+		var arrays []string
+		for _, m := range mm {
+			var b strings.Builder
+			if err := json.NewEncoder(&b).Encode(m); err != nil {
+				return nil, err
+			}
+			arrays = append(arrays, b.String())
+		}
+		return arrays, nil
+	case [][16]byte:
+		bb := v.value.([][16]byte)
+		var arrays []string
+		for _, b := range bb {
+			var buf [36]byte
+			googleuuid.EncodeHex(buf[:], b)
+			arrays = append(arrays, string(buf[:]))
+		}
+		return arrays, nil
 	default:
 		return nil, fmt.Errorf("value %#v is not a []string, []int, []int32, []float64, []float32 or []bool", v.value)
 	}

@@ -339,7 +339,9 @@ type arrayValue struct {
 // Value implements the driver.Valuer interface.
 func (v *arrayValue) Value() (driver.Value, error) {
 	switch v.value.(type) {
-	case []string, []int, []int64, []int32, []float64, []float32, []bool:
+	case []int, []int8, []int16, []int32, []int64,
+		[]uint, []uint8, []uint16, []uint32, []uint64,
+		[]float32, []float64, []bool, []string:
 		break
 	case []map[string]any:
 		mm := v.value.([]map[string]any)
@@ -362,7 +364,10 @@ func (v *arrayValue) Value() (driver.Value, error) {
 		}
 		return arrays, nil
 	default:
-		return nil, fmt.Errorf("value %#v is not a []string, []int, []int32, []float64, []float32 or []bool", v.value)
+		return nil, fmt.Errorf(
+			"value %#v is not a []int, []int8, []int16, []int32, []int64, "+
+				"[]uint, []uint8, []uint16, []uint32, []uint64"+
+				"[]float32, []float64, []bool, [][16]byte, []map[string]any or []string", v.value)
 	}
 	if v.dialect != DialectPostgres {
 		var b strings.Builder

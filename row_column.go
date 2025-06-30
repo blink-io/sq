@@ -365,6 +365,9 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 			switch destPtr.(type) {
 			case *[]string, *[]int, *[]int64, *[]int32, *[]float64, *[]float32, *[]bool:
 				break
+			case *[]uint, *[]uint8, *[]*uint16, *[]uint32, *[]uint64:
+			case *[][16]byte, *[]map[string]any:
+				break
 			default:
 				panic(fmt.Errorf(callsite(skip+1)+"destptr (%T) must be either a pointer to a []string, []int, []int64, []int32, []float64, []float32 or []bool", destPtr))
 			}
@@ -441,6 +444,13 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 		}
 		*destPtr = array
 	case *[]bool:
+		var array pqarray.BoolArray
+		err := array.Scan(scanDest.bytes)
+		if err != nil {
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to bool array: %w", string(scanDest.bytes), err))
+		}
+		*destPtr = array
+	case *[]map[string]any:
 		var array pqarray.BoolArray
 		err := array.Scan(scanDest.bytes)
 		if err != nil {

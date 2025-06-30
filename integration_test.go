@@ -80,6 +80,7 @@ func TestRow(t *testing.T) {
 			"\n    ,int_array JSON" +
 			"\n    ,int64_array JSON" +
 			"\n    ,int32_array JSON" +
+			"\n    ,int16_array JSON" +
 			"\n    ,float64_array JSON" +
 			"\n    ,float32_array JSON" +
 			"\n    ,bool_array JSON" +
@@ -111,6 +112,7 @@ func TestRow(t *testing.T) {
 			"\n    ,int_array BIGINT[]" +
 			"\n    ,int64_array BIGINT[]" +
 			"\n    ,int32_array INT[]" +
+			"\n    ,int16_array SMALLINT[]" +
 			"\n    ,float64_array DOUBLE PRECISION[]" +
 			"\n    ,float32_array REAL[]" +
 			"\n    ,bool_array BOOLEAN[]" +
@@ -136,6 +138,7 @@ func TestRow(t *testing.T) {
 			"\n    ,int_array JSON" +
 			"\n    ,int64_array JSON" +
 			"\n    ,int32_array JSON" +
+			"\n    ,int16_array JSON" +
 			"\n    ,float64_array JSON" +
 			"\n    ,float32_array JSON" +
 			"\n    ,bool_array JSON" +
@@ -161,6 +164,7 @@ func TestRow(t *testing.T) {
 			"\n    ,int_array NVARCHAR(MAX)" +
 			"\n    ,int64_array NVARCHAR(MAX)" +
 			"\n    ,int32_array NVARCHAR(MAX)" +
+			"\n    ,int16_array NVARCHAR(MAX)" +
 			"\n    ,float64_array NVARCHAR(MAX)" +
 			"\n    ,float32_array NVARCHAR(MAX)" +
 			"\n    ,bool_array NVARCHAR(MAX)" +
@@ -184,6 +188,7 @@ func TestRow(t *testing.T) {
 		INT_ARRAY     ArrayField
 		INT64_ARRAY   ArrayField
 		INT32_ARRAY   ArrayField
+		INT16_ARRAY   ArrayField
 		FLOAT64_ARRAY ArrayField
 		FLOAT32_ARRAY ArrayField
 		BOOL_ARRAY    ArrayField
@@ -205,6 +210,7 @@ func TestRow(t *testing.T) {
 		intArray     []int
 		int64Array   []int64
 		int32Array   []int32
+		int16Array   []int16
 		float64Array []float64
 		float32Array []float32
 		boolArray    []bool
@@ -226,6 +232,7 @@ func TestRow(t *testing.T) {
 		intArray:     []int{1, 2, 3},
 		int64Array:   []int64{1, 2, 3},
 		int32Array:   []int32{1, 2, 3},
+		int16Array:   []int16{1, 2, 3},
 		float64Array: []float64{1, 2, 3},
 		float32Array: []float32{1, 2, 3},
 		boolArray:    []bool{true, false, false},
@@ -245,6 +252,7 @@ func TestRow(t *testing.T) {
 		intArray:     []int{4, 5, 6},
 		int64Array:   []int64{4, 5, 6},
 		int32Array:   []int32{4, 5, 6},
+		int16Array:   []int16{4, 5, 6},
 		float64Array: []float64{4, 5, 6},
 		float32Array: []float32{4, 5, 6},
 		boolArray:    []bool{false, true, false},
@@ -309,6 +317,7 @@ func TestRow(t *testing.T) {
 						col.SetArray(TABLE00.INT_ARRAY, value.intArray)
 						col.SetArray(TABLE00.INT64_ARRAY, value.int64Array)
 						col.SetArray(TABLE00.INT32_ARRAY, value.int32Array)
+						col.SetArray(TABLE00.INT16_ARRAY, value.int16Array)
 						col.SetArray(TABLE00.FLOAT64_ARRAY, value.float64Array)
 						col.SetArray(TABLE00.FLOAT32_ARRAY, value.float32Array)
 						col.SetArray(TABLE00.BOOL_ARRAY, value.boolArray)
@@ -344,6 +353,7 @@ func TestRow(t *testing.T) {
 					row.ArrayField(&value.intArray, TABLE00.INT_ARRAY)
 					row.ArrayField(&value.int64Array, TABLE00.INT64_ARRAY)
 					row.ArrayField(&value.int32Array, TABLE00.INT32_ARRAY)
+					row.ArrayField(&value.int16Array, TABLE00.INT16_ARRAY)
 					row.ArrayField(&value.float64Array, TABLE00.FLOAT64_ARRAY)
 					row.ArrayField(&value.float32Array, TABLE00.FLOAT32_ARRAY)
 					row.ArrayField(&value.boolArray, TABLE00.BOOL_ARRAY)
@@ -399,6 +409,7 @@ func TestRow(t *testing.T) {
 					col.set(TABLE00.INT_ARRAY, nil)
 					col.set(TABLE00.INT64_ARRAY, nil)
 					col.set(TABLE00.INT32_ARRAY, nil)
+					col.set(TABLE00.INT16_ARRAY, nil)
 					col.set(TABLE00.FLOAT64_ARRAY, nil)
 					col.set(TABLE00.FLOAT32_ARRAY, nil)
 					col.set(TABLE00.BOOL_ARRAY, nil)
@@ -431,6 +442,7 @@ func TestRow(t *testing.T) {
 					row.ArrayField(&value.intArray, TABLE00.INT_ARRAY)
 					row.ArrayField(&value.int64Array, TABLE00.INT64_ARRAY)
 					row.ArrayField(&value.int32Array, TABLE00.INT32_ARRAY)
+					row.ArrayField(&value.int16Array, TABLE00.INT16_ARRAY)
 					row.ArrayField(&value.float64Array, TABLE00.FLOAT64_ARRAY)
 					row.ArrayField(&value.float32Array, TABLE00.FLOAT32_ARRAY)
 					row.ArrayField(&value.boolArray, TABLE00.BOOL_ARRAY)

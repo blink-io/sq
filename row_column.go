@@ -363,13 +363,11 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 		}
 		if row.dialect == DialectPostgres {
 			switch destPtr.(type) {
-			case *[]string, *[]int, *[]int64, *[]int32, *[]float64, *[]float32, *[]bool:
-				break
-			case *[]uint, *[]uint8, *[]*uint16, *[]uint32, *[]uint64:
-			case *[][16]byte, *[]map[string]any:
+			case *[]string, *[]int, *[]int64, *[]int32, *[]int16, *[]float64, *[]float32, *[]bool:
 				break
 			default:
-				panic(fmt.Errorf(callsite(skip+1)+"destptr (%T) must be either a pointer to a []string, []int, []int64, []int32, []float64, []float32 or []bool", destPtr))
+				panic(fmt.Errorf(callsite(skip+1)+"destptr (%T) must be either a pointer to a []string, []int, []int64, "+
+					"[]int32, []int16, []float64, []float32 or []bool", destPtr))
 			}
 		}
 		row.fields = append(row.fields, field)
@@ -429,6 +427,13 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int32 array: %w", string(scanDest.bytes), err))
 		}
 		*destPtr = array
+	case *[]int16:
+		var array pqarray.Int16Array
+		err := array.Scan(scanDest.bytes)
+		if err != nil {
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int16 array: %w", string(scanDest.bytes), err))
+		}
+		*destPtr = array
 	case *[]float64:
 		var array pqarray.Float64Array
 		err := array.Scan(scanDest.bytes)
@@ -444,13 +449,6 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 		}
 		*destPtr = array
 	case *[]bool:
-		var array pqarray.BoolArray
-		err := array.Scan(scanDest.bytes)
-		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to bool array: %w", string(scanDest.bytes), err))
-		}
-		*destPtr = array
-	case *[]map[string]any:
 		var array pqarray.BoolArray
 		err := array.Scan(scanDest.bytes)
 		if err != nil {
@@ -715,9 +713,10 @@ func handleNumberValue[T NumberType](value any) T {
 		uint16,
 		uint32,
 		uint64,
-		[]byte: // Special case: go-mysql-driver returns everything as []byte.
+		[]byte:
 		var vv T
 		vvKind := reflect.TypeOf(vv).Kind()
+		// Special case: go-mysql-driver returns everything as []byte.
 		if bytes, ok := value.([]byte); ok {
 			var errv error
 			if isIntegerType(vvKind) {
@@ -741,15 +740,15 @@ func handleNumberValue[T NumberType](value any) T {
 		case reflect.Int64:
 			return T(castNumber[int64](value, reflect.Int64, cast.ToInt64E))
 		case reflect.Uint:
-			return T(castNumber[uint](value, reflect.Int, cast.ToUintE))
+			return T(castNumber[uint](value, reflect.Uint, cast.ToUintE))
 		case reflect.Uint8:
-			return T(castNumber[uint8](value, reflect.Int8, cast.ToUint8E))
+			return T(castNumber[uint8](value, reflect.Uint8, cast.ToUint8E))
 		case reflect.Uint16:
-			return T(castNumber[uint16](value, reflect.Int16, cast.ToUint16E))
+			return T(castNumber[uint16](value, reflect.Uint16, cast.ToUint16E))
 		case reflect.Uint32:
-			return T(castNumber[uint32](value, reflect.Int32, cast.ToUint32E))
+			return T(castNumber[uint32](value, reflect.Uint32, cast.ToUint32E))
 		case reflect.Uint64:
-			return T(castNumber[uint64](value, reflect.Int64, cast.ToUint64E))
+			return T(castNumber[uint64](value, reflect.Uint64, cast.ToUint64E))
 		case reflect.Float32:
 			return T(castNumber[float32](value, reflect.Float32, cast.ToFloat32E))
 		case reflect.Float64:
@@ -1423,7 +1422,7 @@ func (col *Column) SetString(field String, value string) { col.set(field, value)
 func (col *Column) SetTime(field Time, value time.Time) { col.set(field, value) }
 
 // SetArray maps the array value to the field. The value should be []string,
-// []int, []int64, []int32, []float64, []float32 or []bool.
+// []int, []int64, []int32, []int16, []float64, []float32 or []bool.
 func (col *Column) SetArray(field Array, value any) { col.set(field, ArrayValue(value)) }
 
 // SetEnum maps the enum value to the field.

@@ -569,6 +569,69 @@ func (a Int64Array) Value() (driver.Value, error) {
 	return "{}", nil
 }
 
+// Int16Array represents a one-dimensional array of the PostgreSQL integer types.
+type Int16Array []int16
+
+// Scan implements the sql.Scanner interface.
+func (a *Int16Array) Scan(src any) error {
+	switch src := src.(type) {
+	case []byte:
+		return a.scanBytes(src)
+	case string:
+		return a.scanBytes([]byte(src))
+	case nil:
+		*a = nil
+		return nil
+	}
+
+	return fmt.Errorf("pq: cannot convert %T to Int16Array", src)
+}
+
+func (a *Int16Array) scanBytes(src []byte) error {
+	elems, err := scanLinearArray(src, []byte{','}, "Int16Array")
+	if err != nil {
+		return err
+	}
+	if *a != nil && len(elems) == 0 {
+		*a = (*a)[:0]
+	} else {
+		b := make(Int16Array, len(elems))
+		for i, v := range elems {
+			x, err := strconv.ParseInt(string(v), 10, 16)
+			if err != nil {
+				return fmt.Errorf("pq: parsing array element index %d: %v", i, err)
+			}
+			b[i] = int16(x)
+		}
+		*a = b
+	}
+	return nil
+}
+
+// Value implements the driver.Valuer interface.
+func (a Int16Array) Value() (driver.Value, error) {
+	if a == nil {
+		return nil, nil
+	}
+
+	if n := len(a); n > 0 {
+		// There will be at least two curly brackets, N bytes of values,
+		// and N-1 bytes of delimiters.
+		b := make([]byte, 1, 1+2*n)
+		b[0] = '{'
+
+		b = strconv.AppendInt(b, int64(a[0]), 10)
+		for i := 1; i < n; i++ {
+			b = append(b, ',')
+			b = strconv.AppendInt(b, int64(a[i]), 10)
+		}
+
+		return string(append(b, '}')), nil
+	}
+
+	return "{}", nil
+}
+
 // Int32Array represents a one-dimensional array of the PostgreSQL integer types.
 type Int32Array []int32
 

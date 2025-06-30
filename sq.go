@@ -325,7 +325,7 @@ func mapperFunctionPanicked(err *error) {
 	}
 }
 
-// ArrayValue takes in a []string, []int, []int64, []int32, []float64,
+// ArrayValue takes in a []string, []int, []int64, []int32, []int16, []float64,
 // []float32 or []bool and returns a driver.Valuer for that type. For Postgres,
 // it serializes into a Postgres array. Otherwise, it serializes into a JSON
 // array.
@@ -341,35 +341,12 @@ type arrayValue struct {
 // Value implements the driver.Valuer interface.
 func (v *arrayValue) Value() (driver.Value, error) {
 	switch v.value.(type) {
-	case []int, []int32, []int64, []float32, []float64, []bool, []string:
+	case []int, []int16, []int32, []int64, []float32, []float64, []bool, []string:
 		break
-	case []int8, []int16, []uint, []uint8, []uint16, []uint32, []uint64:
-		break
-	case []map[string]any:
-		mm := v.value.([]map[string]any)
-		var arrays []string
-		for _, m := range mm {
-			var b strings.Builder
-			if err := json.NewEncoder(&b).Encode(m); err != nil {
-				return nil, err
-			}
-			arrays = append(arrays, b.String())
-		}
-		return arrays, nil
-	case [][16]byte:
-		bb := v.value.([][16]byte)
-		var arrays []string
-		for _, b := range bb {
-			var buf [36]byte
-			googleuuid.EncodeHex(buf[:], b)
-			arrays = append(arrays, string(buf[:]))
-		}
-		return arrays, nil
 	default:
 		return nil, fmt.Errorf(
-			"value %#v is not a []int, []int8, []int16, []int32, []int64, "+
-				"[]uint, []uint8, []uint16, []uint32, []uint64"+
-				"[]float32, []float64, []bool, [][16]byte, []map[string]any or []string", v.value)
+			"value %#v is not a []int, []int16, []int32, []int64, "+
+				"[]float32, []float64, []bool or []string", v.value)
 	}
 	if v.dialect != DialectPostgres {
 		var b strings.Builder

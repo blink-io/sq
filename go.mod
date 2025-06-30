@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/mattn/go-sqlite3 v1.14.28
-	github.com/microsoft/go-mssqldb v1.9.1
+	github.com/microsoft/go-mssqldb v1.9.2
 	github.com/spf13/cast v1.9.2
 	github.com/stretchr/testify v1.10.0
 )

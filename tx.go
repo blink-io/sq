@@ -30,11 +30,11 @@ func (db txDB) RunInTx(ctx context.Context, opts *sql.TxOptions, fn func(context
 	return RunInTx(ctx, db, opts, fn)
 }
 
-func InTx(db TxDB) interface {
+func InTx(txdb TxDB) interface {
 	TxDB
 	RunInTxer
 } {
-	return txDB{TxDB: db}
+	return txDB{TxDB: txdb}
 }
 
 func RunInTx(ctx context.Context, db TxDB, opts *sql.TxOptions, fn func(context.Context, sq.DB) error) error {

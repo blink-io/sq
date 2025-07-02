@@ -1,6 +1,7 @@
 package sq
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"database/sql/driver"
@@ -1532,6 +1533,12 @@ func (row *Row) uuid(destPtr any, field UUID, skip int) {
 	for i := 0; i < 16; i++ {
 		destValue.Index(i).Set(reflect.ValueOf(uuid[i]))
 	}
+}
+
+var zeroUUID [16]byte
+
+func IsZeroUUID(u [16]byte) bool {
+	return bytes.Equal(u[:], zeroUUID[:])
 }
 
 func callsite(skip int) string {

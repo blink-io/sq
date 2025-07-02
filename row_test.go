@@ -3,6 +3,7 @@ package sq
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/google/uuid"
@@ -47,4 +48,11 @@ func TestUUIDGen(t *testing.T) {
 	var u1 = [16]byte(uuid.New())
 	var u2 = [16]byte(uuid.New())
 	fmt.Println(u1, u2)
+}
+
+func TestArrayZero(t *testing.T) {
+	var a1 [18]byte
+	var a2 [18]byte
+
+	assert.Equal(t, a1, a2)
 }

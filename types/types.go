@@ -1,6 +1,15 @@
 package types
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+)
+
+var zeroUUID [16]byte
+
+func IsZeroUUID(u [16]byte) bool {
+	return bytes.Equal(u[:], zeroUUID[:])
+}
 
 type JSON map[string]any
 

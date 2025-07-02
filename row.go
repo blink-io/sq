@@ -41,6 +41,8 @@ type (
 	NullFloat64 = sql.Null[float64]
 	NullString  = sql.Null[string]
 	NullTime    = sql.Null[time.Time]
+	NullJSON    = sql.Null[map[string]any]
+	NullUUID    = sql.Null[[16]byte]
 
 	NumericType = interface {
 		~int | ~int8 | ~int16 | ~int32 | ~int64 |

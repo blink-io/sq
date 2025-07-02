@@ -8,14 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"reflect"
 	"strings"
 	"sync"
 
 	"github.com/blink-io/sq/internal/googleuuid"
 	"github.com/blink-io/sq/internal/pqarray"
-	"github.com/bokwoon95/sq"
 )
 
 var bufPool = &sync.Pool{
@@ -552,21 +550,4 @@ func preprocessValue(dialect string, value any) (any, error) {
 		return driverValue, nil
 	}
 	return value, nil
-}
-
-func SetDefaultDialect(dialect string) {
-	switch dialect := strings.ToLower(dialect); dialect {
-	case DialectPostgres,
-		DialectSQLite,
-		DialectSQLServer,
-		DialectMySQL:
-		DefaultDialect.Store(&dialect)
-	default:
-		slog.Warn(fmt.Sprintf("unsupported dialect: %s, default dialect is unset", dialect))
-	}
-}
-
-// ResetDefaultDialect restores default dialect as unset.
-func ResetDefaultDialect() {
-	sq.DefaultDialect.Store(nil)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -15,6 +16,23 @@ import (
 
 // DefaultDialect is used by all queries (if no dialect is explicitly provided).
 var DefaultDialect atomic.Pointer[string]
+
+func SetDefaultDialect(dialect string) {
+	switch dialect := strings.ToLower(dialect); dialect {
+	case DialectPostgres,
+		DialectSQLite,
+		DialectSQLServer,
+		DialectMySQL:
+		DefaultDialect.Store(&dialect)
+	default:
+		slog.Warn(fmt.Sprintf("unsupported dialect: %s, default dialect is unset", dialect))
+	}
+}
+
+// ResetDefaultDialect restores default dialect as unset.
+func ResetDefaultDialect() {
+	DefaultDialect.Store(nil)
+}
 
 // A Cursor represents a database cursor.
 type Cursor[T any] struct {

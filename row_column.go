@@ -41,7 +41,7 @@ type (
 	NullString  = sql.Null[string]
 	NullTime    = sql.Null[time.Time]
 
-	NullNumberType = interface {
+	NullNumericType = interface {
 		NullInt | NullInt8 | NullInt16 | NullInt32 | NullInt64
 		NullUint | NullUint16 | NullUint32 | NullUint64 | NullInt64
 		NullFloat32 | NullFloat64
@@ -345,7 +345,45 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 // Array scans the array expression into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) Array(destPtr any, format string, values ...any) {
-	//markQueryIsStaticPanic(row, "Array")
+	if row.queryIsStatic {
+		skip := 1
+		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
+			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
+		}
+		index := markNoColumnIndexPanic(row, format)
+		value := row.values[index]
+		if row.dialect == DialectPostgres {
+			switch destPtr.(type) {
+			case *[]string, *[]int, *[]int64, *[]int32, *[]int16, *[]float64, *[]float32, *[]bool:
+				break
+			default:
+				panic(fmt.Errorf(callsite(skip+1)+"destptr (%T) must be either a pointer to a []string, []int, []int64, "+
+					"[]int32, []int16, []float64, []float32 or []bool", destPtr))
+			}
+		}
+
+		var data []byte
+		switch value.(type) {
+		case []byte:
+			data = value.([]byte)
+		case string:
+			data = []byte(value.(string))
+		default:
+			// FIXME
+			panic(fmt.Errorf(callsite(skip+1)+"destptr (%T) must be either a pointer to a []string, []int, []int64, "+
+				"[]int32, []int16, []float64, []float32 or []bool", destPtr))
+		}
+
+		if row.dialect != DialectPostgres {
+			err := json.Unmarshal(data, destPtr)
+			if err != nil {
+				panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", string(data), destPtr, err))
+			}
+			return
+		}
+		handlePostgresArray(destPtr, data, skip)
+		return
+	}
 	row.array(destPtr, Expr(format, values...), 1)
 }
 
@@ -391,19 +429,23 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 		}
 		return
 	}
+	handlePostgresArray(destPtr, scanDest.bytes, skip)
+}
+
+func handlePostgresArray(destPtr any, data []byte, skip int) {
 	switch destPtr := destPtr.(type) {
 	case *[]string:
 		var array pqarray.StringArray
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to string array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to string array: %w", string(data), err))
 		}
 		*destPtr = array
 	case *[]int:
 		var array pqarray.Int64Array
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int64 array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int64 array: %w", string(data), err))
 		}
 		*destPtr = (*destPtr)[:cap(*destPtr)]
 		if len(*destPtr) < len(array) {
@@ -415,44 +457,44 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 		}
 	case *[]int64:
 		var array pqarray.Int64Array
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int64 array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int64 array: %w", string(data), err))
 		}
 		*destPtr = array
 	case *[]int32:
 		var array pqarray.Int32Array
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int32 array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int32 array: %w", string(data), err))
 		}
 		*destPtr = array
 	case *[]int16:
 		var array pqarray.Int16Array
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int16 array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to int16 array: %w", string(data), err))
 		}
 		*destPtr = array
 	case *[]float64:
 		var array pqarray.Float64Array
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to float64 array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to float64 array: %w", string(data), err))
 		}
 		*destPtr = array
 	case *[]float32:
 		var array pqarray.Float32Array
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to float32 array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to float32 array: %w", string(data), err))
 		}
 		*destPtr = array
 	case *[]bool:
 		var array pqarray.BoolArray
-		err := array.Scan(scanDest.bytes)
+		err := array.Scan(data)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to bool array: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"unable to convert %q to bool array: %w", string(data), err))
 		}
 		*destPtr = array
 	default:
@@ -611,6 +653,36 @@ func (row *Row) NullBoolField(field Boolean) NullBool {
 // Enum scans the enum expression into destPtr.
 func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 	//markQueryIsStaticPanic(row, "Enum")
+	if row.queryIsStatic {
+		skip := 1
+		index := markNoColumnIndexPanic(row, format)
+		value := row.values[index]
+		switch value.(type) {
+		case int, int8, int16, int32, int64,
+			uint, uint8, uint16, uint32, uint64,
+			string:
+			name := cast.ToString(value)
+			names := destPtr.Enumerate()
+			enumIndex := 0
+			destValue := reflect.ValueOf(destPtr).Elem()
+			enumIndex = getEnumIndex(name, names, destValue.Type())
+			if enumIndex < 0 {
+				panic(fmt.Errorf(callsite(skip+1)+"%q is not a valid %T", name, destPtr))
+			}
+			switch destValue.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				destValue.SetInt(int64(enumIndex))
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				destValue.SetUint(uint64(enumIndex))
+			case reflect.String:
+				destValue.SetString(name)
+			default:
+			}
+		default:
+			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not enum", value))
+		}
+		return
+	}
 	row.enum(destPtr, Expr(format, values...), 1)
 }
 
@@ -1073,7 +1145,29 @@ func (row *Row) NullUint64Field(field Number) NullUint64 {
 
 // JSON scans the JSON expression into destPtr.
 func (row *Row) JSON(destPtr any, format string, values ...any) {
-	markQueryIsStaticPanic(row, "JSON")
+	if row.queryIsStatic {
+		skip := 1
+		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
+			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
+		}
+		index := markNoColumnIndexPanic(row, format)
+		value := row.values[index]
+		handleFn := func(data []byte) {
+			if err := json.Unmarshal(data, destPtr); err != nil {
+				_, file, line, _ := runtime.Caller(skip + 1)
+				panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(data), destPtr, err))
+			}
+		}
+		switch value.(type) {
+		case []byte:
+			handleFn(value.([]byte))
+		case string:
+			handleFn([]byte(value.(string)))
+		default:
+			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not enum", value))
+		}
+		return
+	}
 	row.json(destPtr, Expr(format, values...), 1)
 }
 
@@ -1268,7 +1362,47 @@ func (row *Row) NullTimeField(field Time) NullTime {
 
 // UUID scans the UUID expression into destPtr.
 func (row *Row) UUID(destPtr any, format string, values ...any) {
-	// TODO If we check queryIsStatic, we cannot fetch UUID column alone.
+	if row.queryIsStatic {
+		skip := 1
+		if _, ok := destPtr.(*[16]byte); !ok {
+			if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
+				panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
+			}
+			destValue := reflect.ValueOf(destPtr).Elem()
+			if destValue.Kind() != reflect.Array || destValue.Len() != 16 || destValue.Type().Elem().Kind() != reflect.Uint8 {
+				panic(fmt.Errorf(callsite(skip+1)+"%T is not a pointer to a [16]byte", destPtr))
+			}
+		}
+
+		index := markNoColumnIndexPanic(row, format)
+		value := row.values[index]
+		switch value.(type) {
+		case [16]byte:
+			destPtr = &value
+		case []byte:
+			data := value.([]byte)
+			if len(data) != 16 {
+				panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not a [16]byte", value))
+			}
+			uuid, err := googleuuid.ParseBytes(data)
+			if err != nil {
+				panic(fmt.Errorf(callsite(skip+1)+"parsing %q as UUID bytes: %w", string(data), err))
+			}
+			destArrayPtr := destPtr.(*[16]byte)
+			copy(destArrayPtr[:], uuid[:])
+		case string:
+			s := value.(string)
+			uuid, err := googleuuid.Parse(s)
+			if err != nil {
+				panic(fmt.Errorf(callsite(skip+1)+"parsing %q as UUID string: %w", s, err))
+			}
+			destArrayPtr := destPtr.(*[16]byte)
+			copy(destArrayPtr[:], uuid[:])
+		default:
+			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not a [16]byte", value))
+		}
+		return
+	}
 	row.uuid(destPtr, Expr(format, values...), 1)
 }
 

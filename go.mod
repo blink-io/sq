@@ -12,6 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/microsoft/go-mssqldb v1.9.2
+	github.com/proullon/ramsql v0.1.4
 	github.com/spf13/cast v1.9.2
 	github.com/stretchr/testify v1.10.0
 )
@@ -27,6 +28,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

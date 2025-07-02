@@ -47,7 +47,7 @@ type (
 		NullFloat32 | NullFloat64
 	}
 
-	NumberType = interface {
+	NumericType = interface {
 		~int | ~int8 | ~int16 | ~int32 | ~int64 |
 			~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
 			~float32 | ~float64
@@ -345,7 +345,7 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 // Array scans the array expression into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) Array(destPtr any, format string, values ...any) {
-	markQueryIsStaticPanic(row, "Array")
+	//markQueryIsStaticPanic(row, "Array")
 	row.array(destPtr, Expr(format, values...), 1)
 }
 
@@ -610,7 +610,7 @@ func (row *Row) NullBoolField(field Boolean) NullBool {
 
 // Enum scans the enum expression into destPtr.
 func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
-	markQueryIsStaticPanic(row, "Enum")
+	//markQueryIsStaticPanic(row, "Enum")
 	row.enum(destPtr, Expr(format, values...), 1)
 }
 
@@ -661,7 +661,7 @@ func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
 	}
 }
 
-func castNumber[T NumberType](value any, valueKind reflect.Kind, convFunc func(i any) (T, error)) T {
+func castNumericType[T NumericType](value any, valueKind reflect.Kind, convFunc func(i any) (T, error)) T {
 	n, err := convFunc(value)
 	if err != nil {
 		tstr := valueKind.String()
@@ -698,7 +698,7 @@ func isFloatType(kind reflect.Kind) bool {
 	}
 }
 
-func handleNumberValue[T NumberType](value any) T {
+func handleNumericValue[T NumericType](value any) T {
 	tt := GetType[T]()
 	switch value.(type) {
 	case float32,
@@ -730,29 +730,29 @@ func handleNumberValue[T NumberType](value any) T {
 		}
 		switch vvKind {
 		case reflect.Int:
-			return T(castNumber[int](value, reflect.Int, cast.ToIntE))
+			return T(castNumericType[int](value, reflect.Int, cast.ToIntE))
 		case reflect.Int8:
-			return T(castNumber[int8](value, reflect.Int8, cast.ToInt8E))
+			return T(castNumericType[int8](value, reflect.Int8, cast.ToInt8E))
 		case reflect.Int16:
-			return T(castNumber[int16](value, reflect.Int16, cast.ToInt16E))
+			return T(castNumericType[int16](value, reflect.Int16, cast.ToInt16E))
 		case reflect.Int32:
-			return T(castNumber[int32](value, reflect.Int32, cast.ToInt32E))
+			return T(castNumericType[int32](value, reflect.Int32, cast.ToInt32E))
 		case reflect.Int64:
-			return T(castNumber[int64](value, reflect.Int64, cast.ToInt64E))
+			return T(castNumericType[int64](value, reflect.Int64, cast.ToInt64E))
 		case reflect.Uint:
-			return T(castNumber[uint](value, reflect.Uint, cast.ToUintE))
+			return T(castNumericType[uint](value, reflect.Uint, cast.ToUintE))
 		case reflect.Uint8:
-			return T(castNumber[uint8](value, reflect.Uint8, cast.ToUint8E))
+			return T(castNumericType[uint8](value, reflect.Uint8, cast.ToUint8E))
 		case reflect.Uint16:
-			return T(castNumber[uint16](value, reflect.Uint16, cast.ToUint16E))
+			return T(castNumericType[uint16](value, reflect.Uint16, cast.ToUint16E))
 		case reflect.Uint32:
-			return T(castNumber[uint32](value, reflect.Uint32, cast.ToUint32E))
+			return T(castNumericType[uint32](value, reflect.Uint32, cast.ToUint32E))
 		case reflect.Uint64:
-			return T(castNumber[uint64](value, reflect.Uint64, cast.ToUint64E))
+			return T(castNumericType[uint64](value, reflect.Uint64, cast.ToUint64E))
 		case reflect.Float32:
-			return T(castNumber[float32](value, reflect.Float32, cast.ToFloat32E))
+			return T(castNumericType[float32](value, reflect.Float32, cast.ToFloat32E))
 		case reflect.Float64:
-			return T(castNumber[float64](value, reflect.Float64, cast.ToFloat64E))
+			return T(castNumericType[float64](value, reflect.Float64, cast.ToFloat64E))
 		default:
 			panic(fmt.Errorf(callsite(1)+"%d is []byte and target type %s is unsupported", value, tt))
 		}
@@ -769,16 +769,16 @@ func handleNumberValue[T NumberType](value any) T {
 	}
 }
 
-func NumberValue[T NumberType](row *Row, format string, values ...any) T {
+func NumericValue[T NumericType](row *Row, format string, values ...any) T {
 	if row.queryIsStatic {
 		index := markNoColumnIndexPanic(row, format)
-		return handleNumberValue[T](row.values[index])
+		return handleNumericValue[T](row.values[index])
 	}
-	return NullNumberField[T](row, Expr(format, values...)).V
+	return NullNumericField[T](row, Expr(format, values...)).V
 }
 
-func NullNumberField[T NumberType](row *Row, field Number) sql.Null[T] {
-	markQueryIsStaticPanic(row, GetType[T]())
+func NullNumericField[T NumericType](row *Row, field Number) sql.Null[T] {
+	//markQueryIsStaticPanic(row, GetType[T]())
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &sql.Null[T]{})
@@ -791,8 +791,8 @@ func NullNumberField[T NumberType](row *Row, field Number) sql.Null[T] {
 	return *scanDest
 }
 
-// NullNumberValue returns the null number value of the expression.
-func NullNumberValue[T NumberType](row *Row, format string, values ...any) sql.Null[T] {
+// NullNumericValue returns the null number value of the expression.
+func NullNumericValue[T NumericType](row *Row, format string, values ...any) sql.Null[T] {
 	if row.queryIsStatic {
 		index := markNoColumnIndexPanic(row, format)
 		value := row.values[index]
@@ -800,16 +800,16 @@ func NullNumberValue[T NumberType](row *Row, format string, values ...any) sql.N
 		case nil:
 			return sql.Null[T]{}
 		default:
-			v := NumberValue[T](row, format, values...)
+			v := NumericValue[T](row, format, values...)
 			return sql.Null[T]{V: v, Valid: true}
 		}
 	}
-	return NullNumberField[T](row, Expr(format, values...))
+	return NullNumericField[T](row, Expr(format, values...))
 }
 
 // Float32 returns the float32 value of the expression.
 func (row *Row) Float32(format string, values ...any) float32 {
-	return NumberValue[float32](row, format, values...)
+	return NumericValue[float32](row, format, values...)
 }
 
 // Float32Field returns the float32 value of the field.
@@ -820,17 +820,18 @@ func (row *Row) Float32Field(field Number) float32 {
 
 // NullFloat32 returns the NullFloat32 value of the expression.
 func (row *Row) NullFloat32(format string, values ...any) NullFloat32 {
-	return NullNumberValue[float32](row, format, values...)
+	return NullNumericValue[float32](row, format, values...)
 }
 
 // NullFloat32Field returns the NullFloat32 value of the field.
 func (row *Row) NullFloat32Field(field Number) NullFloat32 {
-	return NullNumberField[float32](row, field)
+	markQueryIsStaticPanic(row, "NullFloat32Field")
+	return NullNumericField[float32](row, field)
 }
 
 // Float64 returns the float64 value of the expression.
 func (row *Row) Float64(format string, values ...any) float64 {
-	return NumberValue[float64](row, format, values...)
+	return NumericValue[float64](row, format, values...)
 }
 
 // Float64Field returns the float64 value of the field.
@@ -841,17 +842,18 @@ func (row *Row) Float64Field(field Number) float64 {
 
 // NullFloat64 returns the NullFloat64 value of the expression.
 func (row *Row) NullFloat64(format string, values ...any) NullFloat64 {
-	return NullNumberValue[float64](row, format, values...)
+	return NullNumericValue[float64](row, format, values...)
 }
 
 // NullFloat64Field returns the NullFloat64 value of the field.
 func (row *Row) NullFloat64Field(field Number) NullFloat64 {
-	return NullNumberField[float64](row, field)
+	markQueryIsStaticPanic(row, "NullFloat64Field")
+	return NullNumericField[float64](row, field)
 }
 
 // Int returns the int value of the expression.
 func (row *Row) Int(format string, values ...any) int {
-	return NumberValue[int](row, format, values...)
+	return NumericValue[int](row, format, values...)
 }
 
 // IntField returns the int value of the field.
@@ -862,80 +864,84 @@ func (row *Row) IntField(field Number) int {
 
 // NullInt returns the NullInt value of the expression.
 func (row *Row) NullInt(format string, values ...any) NullInt {
-	return NullNumberValue[int](row, format, values...)
+	return NullNumericValue[int](row, format, values...)
 }
 
 // NullIntField returns the int value of the field.
 func (row *Row) NullIntField(field Number) NullInt {
-	return NullNumberField[int](row, field)
+	markQueryIsStaticPanic(row, "NullIntField")
+	return NullNumericField[int](row, field)
 }
 
 // Int8 returns the int value of the expression.
 func (row *Row) Int8(format string, values ...any) int8 {
-	return NumberValue[int8](row, format, values...)
+	return NumericValue[int8](row, format, values...)
 }
 
 // Int8Field returns the int value of the field.
 func (row *Row) Int8Field(field Number) int8 {
 	markQueryIsStaticPanic(row, "Int8Field")
-	return NullNumberField[int8](row, field).V
+	return NullNumericField[int8](row, field).V
 }
 
 // NullInt8 returns the NullInt8 value of the expression.
 func (row *Row) NullInt8(format string, values ...any) NullInt8 {
-	return NullNumberValue[int8](row, format, values...)
+	return NullNumericValue[int8](row, format, values...)
 }
 
 // NullInt8Field returns the int8 value of the field.
 func (row *Row) NullInt8Field(field Number) NullInt8 {
-	return NullNumberField[int8](row, field)
+	markQueryIsStaticPanic(row, "NullInt8Field")
+	return NullNumericField[int8](row, field)
 }
 
 // Int16 returns the int value of the expression.
 func (row *Row) Int16(format string, values ...any) int16 {
-	return NumberValue[int16](row, format, values...)
+	return NumericValue[int16](row, format, values...)
 }
 
 // Int16Field returns the int value of the field.
 func (row *Row) Int16Field(field Number) int16 {
 	markQueryIsStaticPanic(row, "Int16Field")
-	return NullNumberField[int16](row, field).V
+	return NullNumericField[int16](row, field).V
 }
 
 // NullInt16 returns the NullInt16 value of the expression.
 func (row *Row) NullInt16(format string, values ...any) NullInt16 {
-	return NullNumberValue[int16](row, format, values...)
+	return NullNumericValue[int16](row, format, values...)
 }
 
 // NullInt16Field returns the NullInt16 value of the field.
 func (row *Row) NullInt16Field(field Number) NullInt16 {
-	return NullNumberField[int16](row, field)
+	markQueryIsStaticPanic(row, "NullInt16Field")
+	return NullNumericField[int16](row, field)
 }
 
 // Int32 returns the int value of the expression.
 func (row *Row) Int32(format string, values ...any) int32 {
-	return NumberValue[int32](row, format, values...)
+	return NumericValue[int32](row, format, values...)
 }
 
 // Int32Field returns the int value of the field.
 func (row *Row) Int32Field(field Number) int32 {
 	markQueryIsStaticPanic(row, "Int32Field")
-	return NullNumberField[int32](row, field).V
+	return NullNumericField[int32](row, field).V
 }
 
 // NullInt32 returns the NullInt32 value of the expression.
 func (row *Row) NullInt32(format string, values ...any) NullInt32 {
-	return NullNumberValue[int32](row, format, values...)
+	return NullNumericValue[int32](row, format, values...)
 }
 
 // NullInt32Field returns the NullInt32 value of the field.
 func (row *Row) NullInt32Field(field Number) NullInt32 {
-	return NullNumberField[int32](row, field)
+	markQueryIsStaticPanic(row, "NullInt32Field")
+	return NullNumericField[int32](row, field)
 }
 
 // Int64 returns the int64 value of the expression.
 func (row *Row) Int64(format string, values ...any) int64 {
-	return NumberValue[int64](row, format, values...)
+	return NumericValue[int64](row, format, values...)
 }
 
 // Int64Field returns the int64 value of the field.
@@ -946,17 +952,18 @@ func (row *Row) Int64Field(field Number) int64 {
 
 // NullInt64 returns the NullInt64 value of the expression.
 func (row *Row) NullInt64(format string, values ...any) NullInt64 {
-	return NullNumberValue[int64](row, format, values...)
+	return NullNumericValue[int64](row, format, values...)
 }
 
 // NullInt64Field returns the NullInt64 value of the field.
 func (row *Row) NullInt64Field(field Number) NullInt64 {
-	return NullNumberField[int64](row, field)
+	markQueryIsStaticPanic(row, "NullInt64Field")
+	return NullNumericField[int64](row, field)
 }
 
 // Uint returns the uint value of the expression.
 func (row *Row) Uint(format string, values ...any) uint {
-	return NumberValue[uint](row, format, values...)
+	return NumericValue[uint](row, format, values...)
 }
 
 // UintField returns the uint value of the field.
@@ -967,17 +974,18 @@ func (row *Row) UintField(field Number) int {
 
 // NullUint returns the NullUint value of the expression.
 func (row *Row) NullUint(format string, values ...any) NullUint {
-	return NullNumberValue[uint](row, format, values...)
+	return NullNumericValue[uint](row, format, values...)
 }
 
 // NullUintField returns the uint value of the field.
 func (row *Row) NullUintField(field Number) NullUint {
-	return NullNumberField[uint](row, field)
+	markQueryIsStaticPanic(row, "NullUintField")
+	return NullNumericField[uint](row, field)
 }
 
 // Uint8 returns the uint8 value of the expression.
 func (row *Row) Uint8(format string, values ...any) uint8 {
-	return NumberValue[uint8](row, format, values...)
+	return NumericValue[uint8](row, format, values...)
 }
 
 // Uint8Field returns the uint8 value of the field.
@@ -988,17 +996,18 @@ func (row *Row) Uint8Field(field Number) int8 {
 
 // NullUint8 returns the NullUint8 value of the expression.
 func (row *Row) NullUint8(format string, values ...any) NullUint8 {
-	return NullNumberValue[uint8](row, format, values...)
+	return NullNumericValue[uint8](row, format, values...)
 }
 
 // NullUint8Field returns the NullUint8 value of the field.
 func (row *Row) NullUint8Field(field Number) NullUint8 {
-	return NullNumberField[uint8](row, field)
+	markQueryIsStaticPanic(row, "NullUint8Field")
+	return NullNumericField[uint8](row, field)
 }
 
 // Uint16 returns the uint16 value of the expression.
 func (row *Row) Uint16(format string, values ...any) uint16 {
-	return NumberValue[uint16](row, format, values...)
+	return NumericValue[uint16](row, format, values...)
 }
 
 // Uint16Field returns the uint16 value of the field.
@@ -1009,17 +1018,18 @@ func (row *Row) Uint16Field(field Number) uint16 {
 
 // NullUint16 returns the NullUint16 value of the expression.
 func (row *Row) NullUint16(format string, values ...any) NullUint16 {
-	return NullNumberValue[uint16](row, format, values...)
+	return NullNumericValue[uint16](row, format, values...)
 }
 
 // NullUint16Field returns the NullUint16 value of the field.
 func (row *Row) NullUint16Field(field Number) NullUint16 {
-	return NullNumberField[uint16](row, field)
+	markQueryIsStaticPanic(row, "NullUint16Field")
+	return NullNumericField[uint16](row, field)
 }
 
 // Uint32 returns the uint32 value of the expression.
 func (row *Row) Uint32(format string, values ...any) uint32 {
-	return NumberValue[uint32](row, format, values...)
+	return NumericValue[uint32](row, format, values...)
 }
 
 // Uint32Field returns the uint32 value of the field.
@@ -1030,17 +1040,18 @@ func (row *Row) Uint32Field(field Number) uint32 {
 
 // NullUint32 returns the NullUint32 value of the expression.
 func (row *Row) NullUint32(format string, values ...any) NullUint32 {
-	return NullNumberValue[uint32](row, format, values...)
+	return NullNumericValue[uint32](row, format, values...)
 }
 
 // NullUint32Field returns the NullUint32 value of the field.
 func (row *Row) NullUint32Field(field Number) NullUint32 {
-	return NullNumberField[uint32](row, field)
+	markQueryIsStaticPanic(row, "NullUint32Field")
+	return NullNumericField[uint32](row, field)
 }
 
 // Uint64 returns the uint64 value of the expression.
 func (row *Row) Uint64(format string, values ...any) uint64 {
-	return NumberValue[uint64](row, format, values...)
+	return NumericValue[uint64](row, format, values...)
 }
 
 // Uint64Field returns the uint64 value of the field.
@@ -1051,27 +1062,24 @@ func (row *Row) Uint64Field(field Number) uint64 {
 
 // NullUint64 returns the NullUint64 value of the expression.
 func (row *Row) NullUint64(format string, values ...any) NullUint64 {
-	return NullNumberValue[uint64](row, format, values...)
+	return NullNumericValue[uint64](row, format, values...)
 }
 
 // NullUint64Field returns the NullUint64 value of the field.
 func (row *Row) NullUint64Field(field Number) NullUint64 {
-	return NullNumberField[uint64](row, field)
+	markQueryIsStaticPanic(row, "NullUint64Field")
+	return NullNumericField[uint64](row, field)
 }
 
 // JSON scans the JSON expression into destPtr.
 func (row *Row) JSON(destPtr any, format string, values ...any) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call JSON for static queries"))
-	}
+	markQueryIsStaticPanic(row, "JSON")
 	row.json(destPtr, Expr(format, values...), 1)
 }
 
 // JSONField scans the JSON field into destPtr.
 func (row *Row) JSONField(destPtr any, field JSON) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call JSONField for static queries"))
-	}
+	markQueryIsStaticPanic(row, "JSONField")
 	row.json(destPtr, field, 1)
 }
 
@@ -1260,9 +1268,7 @@ func (row *Row) NullTimeField(field Time) NullTime {
 
 // UUID scans the UUID expression into destPtr.
 func (row *Row) UUID(destPtr any, format string, values ...any) {
-	if row.queryIsStatic {
-		panic(fmt.Errorf("%s", callsite(1)+"cannot call UUID for static queries"))
-	}
+	// TODO If we check queryIsStatic, we cannot fetch UUID column alone.
 	row.uuid(destPtr, Expr(format, values...), 1)
 }
 

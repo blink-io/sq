@@ -157,13 +157,84 @@ func (row *Row) Value(format string, values ...any) any {
 
 // Scan scans the expression into destPtr.
 func (row *Row) Scan(destPtr any, format string, values ...any) {
-	markQueryIsStaticPanic(row, "Scan")
+	if row.queryIsStatic {
+		skip := 1
+		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
+			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
+		}
+		index := makeNoColumnIndexPanic(row, format)
+		value := row.values[index]
+		valid := value != nil
+		switch destPtr := destPtr.(type) {
+		case *string:
+			*destPtr = cast.To[string](value)
+		case *int:
+			*destPtr = cast.To[int](value)
+		case *int8:
+			*destPtr = cast.To[int8](value)
+		case *int16:
+			*destPtr = cast.To[int16](value)
+		case *int32:
+			*destPtr = cast.To[int32](value)
+		case *int64:
+			*destPtr = cast.To[int64](value)
+		case *uint:
+			*destPtr = cast.To[uint](value)
+		case *uint8:
+			*destPtr = cast.To[uint8](value)
+		case *uint16:
+			*destPtr = cast.To[uint16](value)
+		case *uint32:
+			*destPtr = cast.To[uint32](value)
+		case *uint64:
+			*destPtr = cast.To[uint64](value)
+		case *float32:
+			*destPtr = cast.To[float32](value)
+		case *float64:
+			*destPtr = cast.To[float64](value)
+		case *time.Time:
+			*destPtr = cast.To[time.Time](value)
+		case *NullInt:
+			*destPtr = NullInt{V: cast.To[int](value), Valid: valid}
+		case *NullInt8:
+			*destPtr = NullInt8{V: cast.To[int8](value), Valid: valid}
+		case *NullInt16:
+			*destPtr = NullInt16{V: cast.To[int16](value), Valid: valid}
+		case *NullInt32:
+			*destPtr = NullInt32{V: cast.To[int32](value), Valid: valid}
+		case *NullInt64:
+			*destPtr = NullInt64{V: cast.To[int64](value), Valid: valid}
+		case *NullUint:
+			*destPtr = NullUint{V: cast.To[uint](value), Valid: valid}
+		case *NullUint8:
+			*destPtr = NullUint8{V: cast.To[uint8](value), Valid: valid}
+		case *NullUint16:
+			*destPtr = NullUint16{V: cast.To[uint16](value), Valid: valid}
+		case *NullUint32:
+			*destPtr = NullUint32{V: cast.To[uint32](value), Valid: valid}
+		case *NullUint64:
+			*destPtr = NullUint64{V: cast.To[uint64](value), Valid: valid}
+		case *NullFloat32:
+			*destPtr = NullFloat32{V: cast.To[float32](value), Valid: valid}
+		case *NullFloat64:
+			*destPtr = NullFloat64{V: cast.To[float64](value), Valid: valid}
+		case *NullString:
+			*destPtr = NullString{V: cast.To[string](value), Valid: valid}
+		case *NullTime:
+			*destPtr = NullTime{V: cast.To[time.Time](value), Valid: valid}
+		default:
+			destValue := reflect.ValueOf(destPtr).Elem()
+			srcValue := reflect.ValueOf(value).Elem()
+			destValue.Set(srcValue)
+		}
+		return
+	}
 	row.scan(destPtr, Expr(format, values...), 1)
 }
 
 // ScanField scans the field into destPtr.
 func (row *Row) ScanField(destPtr any, field Field) {
-	markQueryIsStaticPanic(row, "ScanField")
+	makeQueryIsStaticPanicPanic(row, "ScanField")
 	row.scan(destPtr, field, 1)
 }
 
@@ -350,7 +421,7 @@ func (row *Row) Array(destPtr any, format string, values ...any) {
 		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
 			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
 		}
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		if row.dialect == DialectPostgres {
 			switch destPtr.(type) {
@@ -369,9 +440,7 @@ func (row *Row) Array(destPtr any, format string, values ...any) {
 		case string:
 			data = []byte(value.(string))
 		default:
-			// FIXME
-			panic(fmt.Errorf(callsite(skip+1)+"destptr (%T) must be either a pointer to a []string, []int, []int64, "+
-				"[]int32, []int16, []float64, []float32 or []bool", destPtr))
+			panic(fmt.Errorf(callsite(skip+1)+"%[1]v is %[1]T, not []byte or string", value))
 		}
 
 		if row.dialect != DialectPostgres {
@@ -390,7 +459,7 @@ func (row *Row) Array(destPtr any, format string, values ...any) {
 // ArrayField scans the array field into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) ArrayField(destPtr any, field Array) {
-	markQueryIsStaticPanic(row, "ArrayField")
+	makeQueryIsStaticPanicPanic(row, "ArrayField")
 	row.array(destPtr, field, 1)
 }
 
@@ -505,7 +574,7 @@ func handlePostgresArray(destPtr any, data []byte, skip int) {
 // Bytes return the []byte value of the expression.
 func (row *Row) Bytes(format string, values ...any) []byte {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case []byte:
@@ -539,7 +608,7 @@ func (row *Row) Bytes(format string, values ...any) []byte {
 
 // BytesField returns the []byte value of the field.
 func (row *Row) BytesField(field Binary) []byte {
-	markQueryIsStaticPanic(row, "BytesField")
+	makeQueryIsStaticPanicPanic(row, "BytesField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &nullBytes{
@@ -564,7 +633,7 @@ func (row *Row) BytesField(field Binary) []byte {
 // Bool returns the bool value of the expression.
 func (row *Row) Bool(format string, values ...any) bool {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case int64:
@@ -597,14 +666,14 @@ func (row *Row) Bool(format string, values ...any) bool {
 
 // BoolField returns the bool value of the field.
 func (row *Row) BoolField(field Boolean) bool {
-	markQueryIsStaticPanic(row, "BoolField")
+	makeQueryIsStaticPanicPanic(row, "BoolField")
 	return row.NullBoolField(field).V
 }
 
 // NullBool returns the NullBool value of the expression.
 func (row *Row) NullBool(format string, values ...any) NullBool {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case int64:
@@ -637,7 +706,7 @@ func (row *Row) NullBool(format string, values ...any) NullBool {
 
 // NullBoolField returns the NullBool value of the field.
 func (row *Row) NullBoolField(field Boolean) NullBool {
-	markQueryIsStaticPanic(row, "NullBoolField")
+	makeQueryIsStaticPanicPanic(row, "NullBoolField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &NullBool{})
@@ -652,10 +721,10 @@ func (row *Row) NullBoolField(field Boolean) NullBool {
 
 // Enum scans the enum expression into destPtr.
 func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
-	//markQueryIsStaticPanic(row, "Enum")
+	//makeQueryIsStaticPanicPanic(row, "Enum")
 	if row.queryIsStatic {
 		skip := 1
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value.(type) {
 		case int, int8, int16, int32, int64,
@@ -688,7 +757,7 @@ func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 
 // EnumField scans the enum field into destPtr.
 func (row *Row) EnumField(destPtr Enumeration, field Enum) {
-	markQueryIsStaticPanic(row, "EnumField")
+	makeQueryIsStaticPanicPanic(row, "EnumField")
 	row.enum(destPtr, field, 1)
 }
 
@@ -843,14 +912,14 @@ func handleNumericValue[T NumericType](value any) T {
 
 func NumericValue[T NumericType](row *Row, format string, values ...any) T {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		return handleNumericValue[T](row.values[index])
 	}
 	return NullNumericField[T](row, Expr(format, values...)).V
 }
 
 func NullNumericField[T NumericType](row *Row, field Number) sql.Null[T] {
-	//markQueryIsStaticPanic(row, GetType[T]())
+	//makeQueryIsStaticPanicPanic(row, GetType[T]())
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &sql.Null[T]{})
@@ -866,7 +935,7 @@ func NullNumericField[T NumericType](row *Row, field Number) sql.Null[T] {
 // NullNumericValue returns the null number value of the expression.
 func NullNumericValue[T NumericType](row *Row, format string, values ...any) sql.Null[T] {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value.(type) {
 		case nil:
@@ -886,7 +955,7 @@ func (row *Row) Float32(format string, values ...any) float32 {
 
 // Float32Field returns the float32 value of the field.
 func (row *Row) Float32Field(field Number) float32 {
-	markQueryIsStaticPanic(row, "Float32Field")
+	makeQueryIsStaticPanicPanic(row, "Float32Field")
 	return row.NullFloat32Field(field).V
 }
 
@@ -897,7 +966,7 @@ func (row *Row) NullFloat32(format string, values ...any) NullFloat32 {
 
 // NullFloat32Field returns the NullFloat32 value of the field.
 func (row *Row) NullFloat32Field(field Number) NullFloat32 {
-	markQueryIsStaticPanic(row, "NullFloat32Field")
+	makeQueryIsStaticPanicPanic(row, "NullFloat32Field")
 	return NullNumericField[float32](row, field)
 }
 
@@ -908,7 +977,7 @@ func (row *Row) Float64(format string, values ...any) float64 {
 
 // Float64Field returns the float64 value of the field.
 func (row *Row) Float64Field(field Number) float64 {
-	markQueryIsStaticPanic(row, "Float64Field")
+	makeQueryIsStaticPanicPanic(row, "Float64Field")
 	return row.NullFloat64Field(field).V
 }
 
@@ -919,7 +988,7 @@ func (row *Row) NullFloat64(format string, values ...any) NullFloat64 {
 
 // NullFloat64Field returns the NullFloat64 value of the field.
 func (row *Row) NullFloat64Field(field Number) NullFloat64 {
-	markQueryIsStaticPanic(row, "NullFloat64Field")
+	makeQueryIsStaticPanicPanic(row, "NullFloat64Field")
 	return NullNumericField[float64](row, field)
 }
 
@@ -930,7 +999,7 @@ func (row *Row) Int(format string, values ...any) int {
 
 // IntField returns the int value of the field.
 func (row *Row) IntField(field Number) int {
-	markQueryIsStaticPanic(row, "IntField")
+	makeQueryIsStaticPanicPanic(row, "IntField")
 	return int(row.NullInt64Field(field).V)
 }
 
@@ -941,7 +1010,7 @@ func (row *Row) NullInt(format string, values ...any) NullInt {
 
 // NullIntField returns the int value of the field.
 func (row *Row) NullIntField(field Number) NullInt {
-	markQueryIsStaticPanic(row, "NullIntField")
+	makeQueryIsStaticPanicPanic(row, "NullIntField")
 	return NullNumericField[int](row, field)
 }
 
@@ -952,7 +1021,7 @@ func (row *Row) Int8(format string, values ...any) int8 {
 
 // Int8Field returns the int value of the field.
 func (row *Row) Int8Field(field Number) int8 {
-	markQueryIsStaticPanic(row, "Int8Field")
+	makeQueryIsStaticPanicPanic(row, "Int8Field")
 	return NullNumericField[int8](row, field).V
 }
 
@@ -963,7 +1032,7 @@ func (row *Row) NullInt8(format string, values ...any) NullInt8 {
 
 // NullInt8Field returns the int8 value of the field.
 func (row *Row) NullInt8Field(field Number) NullInt8 {
-	markQueryIsStaticPanic(row, "NullInt8Field")
+	makeQueryIsStaticPanicPanic(row, "NullInt8Field")
 	return NullNumericField[int8](row, field)
 }
 
@@ -974,7 +1043,7 @@ func (row *Row) Int16(format string, values ...any) int16 {
 
 // Int16Field returns the int value of the field.
 func (row *Row) Int16Field(field Number) int16 {
-	markQueryIsStaticPanic(row, "Int16Field")
+	makeQueryIsStaticPanicPanic(row, "Int16Field")
 	return NullNumericField[int16](row, field).V
 }
 
@@ -985,7 +1054,7 @@ func (row *Row) NullInt16(format string, values ...any) NullInt16 {
 
 // NullInt16Field returns the NullInt16 value of the field.
 func (row *Row) NullInt16Field(field Number) NullInt16 {
-	markQueryIsStaticPanic(row, "NullInt16Field")
+	makeQueryIsStaticPanicPanic(row, "NullInt16Field")
 	return NullNumericField[int16](row, field)
 }
 
@@ -996,7 +1065,7 @@ func (row *Row) Int32(format string, values ...any) int32 {
 
 // Int32Field returns the int value of the field.
 func (row *Row) Int32Field(field Number) int32 {
-	markQueryIsStaticPanic(row, "Int32Field")
+	makeQueryIsStaticPanicPanic(row, "Int32Field")
 	return NullNumericField[int32](row, field).V
 }
 
@@ -1007,7 +1076,7 @@ func (row *Row) NullInt32(format string, values ...any) NullInt32 {
 
 // NullInt32Field returns the NullInt32 value of the field.
 func (row *Row) NullInt32Field(field Number) NullInt32 {
-	markQueryIsStaticPanic(row, "NullInt32Field")
+	makeQueryIsStaticPanicPanic(row, "NullInt32Field")
 	return NullNumericField[int32](row, field)
 }
 
@@ -1018,7 +1087,7 @@ func (row *Row) Int64(format string, values ...any) int64 {
 
 // Int64Field returns the int64 value of the field.
 func (row *Row) Int64Field(field Number) int64 {
-	markQueryIsStaticPanic(row, "Int64Field")
+	makeQueryIsStaticPanicPanic(row, "Int64Field")
 	return row.NullInt64Field(field).V
 }
 
@@ -1029,7 +1098,7 @@ func (row *Row) NullInt64(format string, values ...any) NullInt64 {
 
 // NullInt64Field returns the NullInt64 value of the field.
 func (row *Row) NullInt64Field(field Number) NullInt64 {
-	markQueryIsStaticPanic(row, "NullInt64Field")
+	makeQueryIsStaticPanicPanic(row, "NullInt64Field")
 	return NullNumericField[int64](row, field)
 }
 
@@ -1040,7 +1109,7 @@ func (row *Row) Uint(format string, values ...any) uint {
 
 // UintField returns the uint value of the field.
 func (row *Row) UintField(field Number) int {
-	markQueryIsStaticPanic(row, "UintField")
+	makeQueryIsStaticPanicPanic(row, "UintField")
 	return row.NullIntField(field).V
 }
 
@@ -1051,7 +1120,7 @@ func (row *Row) NullUint(format string, values ...any) NullUint {
 
 // NullUintField returns the uint value of the field.
 func (row *Row) NullUintField(field Number) NullUint {
-	markQueryIsStaticPanic(row, "NullUintField")
+	makeQueryIsStaticPanicPanic(row, "NullUintField")
 	return NullNumericField[uint](row, field)
 }
 
@@ -1062,7 +1131,7 @@ func (row *Row) Uint8(format string, values ...any) uint8 {
 
 // Uint8Field returns the uint8 value of the field.
 func (row *Row) Uint8Field(field Number) int8 {
-	markQueryIsStaticPanic(row, "Uint8Field")
+	makeQueryIsStaticPanicPanic(row, "Uint8Field")
 	return row.NullInt8Field(field).V
 }
 
@@ -1073,7 +1142,7 @@ func (row *Row) NullUint8(format string, values ...any) NullUint8 {
 
 // NullUint8Field returns the NullUint8 value of the field.
 func (row *Row) NullUint8Field(field Number) NullUint8 {
-	markQueryIsStaticPanic(row, "NullUint8Field")
+	makeQueryIsStaticPanicPanic(row, "NullUint8Field")
 	return NullNumericField[uint8](row, field)
 }
 
@@ -1084,7 +1153,7 @@ func (row *Row) Uint16(format string, values ...any) uint16 {
 
 // Uint16Field returns the uint16 value of the field.
 func (row *Row) Uint16Field(field Number) uint16 {
-	markQueryIsStaticPanic(row, "Uint16Field")
+	makeQueryIsStaticPanicPanic(row, "Uint16Field")
 	return row.NullUint16Field(field).V
 }
 
@@ -1095,7 +1164,7 @@ func (row *Row) NullUint16(format string, values ...any) NullUint16 {
 
 // NullUint16Field returns the NullUint16 value of the field.
 func (row *Row) NullUint16Field(field Number) NullUint16 {
-	markQueryIsStaticPanic(row, "NullUint16Field")
+	makeQueryIsStaticPanicPanic(row, "NullUint16Field")
 	return NullNumericField[uint16](row, field)
 }
 
@@ -1106,7 +1175,7 @@ func (row *Row) Uint32(format string, values ...any) uint32 {
 
 // Uint32Field returns the uint32 value of the field.
 func (row *Row) Uint32Field(field Number) uint32 {
-	markQueryIsStaticPanic(row, "Uint32Field")
+	makeQueryIsStaticPanicPanic(row, "Uint32Field")
 	return row.NullUint32Field(field).V
 }
 
@@ -1117,7 +1186,7 @@ func (row *Row) NullUint32(format string, values ...any) NullUint32 {
 
 // NullUint32Field returns the NullUint32 value of the field.
 func (row *Row) NullUint32Field(field Number) NullUint32 {
-	markQueryIsStaticPanic(row, "NullUint32Field")
+	makeQueryIsStaticPanicPanic(row, "NullUint32Field")
 	return NullNumericField[uint32](row, field)
 }
 
@@ -1128,7 +1197,7 @@ func (row *Row) Uint64(format string, values ...any) uint64 {
 
 // Uint64Field returns the uint64 value of the field.
 func (row *Row) Uint64Field(field Number) uint64 {
-	markQueryIsStaticPanic(row, "Uint64Field")
+	makeQueryIsStaticPanicPanic(row, "Uint64Field")
 	return row.NullUint64Field(field).V
 }
 
@@ -1139,7 +1208,7 @@ func (row *Row) NullUint64(format string, values ...any) NullUint64 {
 
 // NullUint64Field returns the NullUint64 value of the field.
 func (row *Row) NullUint64Field(field Number) NullUint64 {
-	markQueryIsStaticPanic(row, "NullUint64Field")
+	makeQueryIsStaticPanicPanic(row, "NullUint64Field")
 	return NullNumericField[uint64](row, field)
 }
 
@@ -1150,7 +1219,7 @@ func (row *Row) JSON(destPtr any, format string, values ...any) {
 		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
 			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
 		}
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		handleFn := func(data []byte) {
 			if err := json.Unmarshal(data, destPtr); err != nil {
@@ -1173,7 +1242,7 @@ func (row *Row) JSON(destPtr any, format string, values ...any) {
 
 // JSONField scans the JSON field into destPtr.
 func (row *Row) JSONField(destPtr any, field JSON) {
-	markQueryIsStaticPanic(row, "JSONField")
+	makeQueryIsStaticPanicPanic(row, "JSONField")
 	row.json(destPtr, field, 1)
 }
 
@@ -1205,7 +1274,7 @@ func (row *Row) json(destPtr any, field JSON, skip int) {
 // String returns the string value of the expression.
 func (row *Row) String(format string, values ...any) string {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case int64:
@@ -1231,14 +1300,14 @@ func (row *Row) String(format string, values ...any) string {
 
 // StringField returns the string value of the field.
 func (row *Row) StringField(field String) string {
-	markQueryIsStaticPanic(row, "StringField")
+	makeQueryIsStaticPanicPanic(row, "StringField")
 	return row.NullStringField(field).V
 }
 
 // NullString returns the NullString value of the expression.
 func (row *Row) NullString(format string, values ...any) NullString {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case []byte:
@@ -1256,7 +1325,7 @@ func (row *Row) NullString(format string, values ...any) NullString {
 
 // NullStringField returns the NullString value of the field.
 func (row *Row) NullStringField(field String) NullString {
-	markQueryIsStaticPanic(row, "NullStringField")
+	makeQueryIsStaticPanicPanic(row, "NullStringField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &NullString{})
@@ -1285,7 +1354,7 @@ var sqliteTimestampFormats = []string{
 // Time returns the time.Time value of the expression.
 func (row *Row) Time(format string, values ...any) time.Time {
 	if row.queryIsStatic {
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value := value.(type) {
 		case []byte:
@@ -1310,7 +1379,7 @@ func (row *Row) Time(format string, values ...any) time.Time {
 
 // TimeField returns the time.Time value of the field.
 func (row *Row) TimeField(field Time) time.Time {
-	markQueryIsStaticPanic(row, "TimeField")
+	makeQueryIsStaticPanicPanic(row, "TimeField")
 	return row.NullTimeField(field).V
 }
 
@@ -1347,7 +1416,7 @@ func (row *Row) NullTime(format string, values ...any) NullTime {
 
 // NullTimeField returns the NullTime value of the field.
 func (row *Row) NullTimeField(field Time) NullTime {
-	markQueryIsStaticPanic(row, "NullTimeField")
+	makeQueryIsStaticPanicPanic(row, "NullTimeField")
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &NullTime{})
@@ -1374,7 +1443,7 @@ func (row *Row) UUID(destPtr any, format string, values ...any) {
 			}
 		}
 
-		index := markNoColumnIndexPanic(row, format)
+		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
 		switch value.(type) {
 		case [16]byte:
@@ -1408,7 +1477,7 @@ func (row *Row) UUID(destPtr any, format string, values ...any) {
 
 // UUIDField scans the UUID field into destPtr.
 func (row *Row) UUIDField(destPtr any, field UUID) {
-	markQueryIsStaticPanic(row, "UUIDField")
+	makeQueryIsStaticPanicPanic(row, "UUIDField")
 	row.uuid(destPtr, field, 1)
 }
 
@@ -1643,7 +1712,7 @@ func (n *nullBytes) Value() (driver.Value, error) {
 	}
 }
 
-func markNoColumnIndexPanic(row *Row, format string) int {
+func makeNoColumnIndexPanic(row *Row, format string) int {
 	index, ok := row.columnIndex[format]
 	if !ok {
 		panic(fmt.Errorf(callsite(1)+"column %s does not exist (available columns: %s)", format, strings.Join(row.columns, ", ")))
@@ -1651,7 +1720,7 @@ func markNoColumnIndexPanic(row *Row, format string) int {
 	return index
 }
 
-func markQueryIsStaticPanic(row *Row, target string) {
+func makeQueryIsStaticPanicPanic(row *Row, target string) {
 	if row.queryIsStatic {
 		panic(fmt.Errorf("%s", callsite(1)+"cannot call "+target+" for static queries"))
 	}

@@ -25,6 +25,9 @@ type (
 	RowMapper[T any] func(context.Context, *Row) T
 )
 
+var _ sql.Scanner = (*sql.Null)(nil)
+var _ driver.Valuer = sql.Null[any]{}
+
 type (
 	NullBytes     = sql.Null[[]byte]
 	NullBool      = sql.Null[bool]

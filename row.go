@@ -1,7 +1,6 @@
 package sq
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"database/sql/driver"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/blink-io/sq/internal/googleuuid"
 	"github.com/blink-io/sq/internal/pqarray"
+	"github.com/blink-io/sq/types"
 
 	"github.com/spf13/cast"
 )
@@ -26,23 +26,25 @@ type (
 )
 
 type (
-	NullBool    = sql.Null[bool]
-	NullInt     = sql.Null[int]
-	NullInt8    = sql.Null[int8]
-	NullInt16   = sql.Null[int16]
-	NullInt32   = sql.Null[int32]
-	NullInt64   = sql.Null[int64]
-	NullUint    = sql.Null[uint]
-	NullUint8   = sql.Null[uint8]
-	NullUint16  = sql.Null[uint16]
-	NullUint32  = sql.Null[uint32]
-	NullUint64  = sql.Null[uint64]
-	NullFloat32 = sql.Null[float32]
-	NullFloat64 = sql.Null[float64]
-	NullString  = sql.Null[string]
-	NullTime    = sql.Null[time.Time]
-	NullJSON    = sql.Null[map[string]any]
-	NullUUID    = sql.Null[[16]byte]
+	NullBytes     = sql.Null[[]byte]
+	NullBool      = sql.Null[bool]
+	NullInt       = sql.Null[int]
+	NullInt8      = sql.Null[int8]
+	NullInt16     = sql.Null[int16]
+	NullInt32     = sql.Null[int32]
+	NullInt64     = sql.Null[int64]
+	NullUint      = sql.Null[uint]
+	NullUint8     = sql.Null[uint8]
+	NullUint16    = sql.Null[uint16]
+	NullUint32    = sql.Null[uint32]
+	NullUint64    = sql.Null[uint64]
+	NullFloat32   = sql.Null[float32]
+	NullFloat64   = sql.Null[float64]
+	NullString    = sql.Null[string]
+	NullTime      = sql.Null[time.Time]
+	NullJSON      = sql.Null[types.JSON]
+	NullJSONBytes = sql.Null[types.JSONBytes]
+	NullUUID      = sql.Null[types.UUID]
 
 	NumericType = interface {
 		~int | ~int8 | ~int16 | ~int32 | ~int64 |
@@ -56,6 +58,14 @@ type (
 			NullFloat32 | NullFloat64
 	}
 )
+
+func NullFrom[V any](v V, valid bool) sql.Null[V] {
+	return sql.Null[V]{V: v, Valid: valid}
+}
+
+func ValidNullFrom[V any](v V) sql.Null[V] {
+	return sql.Null[V]{V: v, Valid: true}
+}
 
 // Row represents the state of a row after a call to rows.Next().
 type Row struct {
@@ -426,6 +436,13 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 // Array scans the array expression into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) Array(destPtr any, format string, values ...any) {
+	var valid bool
+	row.NullArray(destPtr, &valid, format, values...)
+}
+
+// NullArray scans the array expression into destPtr. The destPtr must be a pointer
+// to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
+func (row *Row) NullArray(destPtr any, valid *bool, format string, values ...any) {
 	skip := 1
 	if row.queryIsStatic {
 		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
@@ -433,6 +450,10 @@ func (row *Row) Array(destPtr any, format string, values ...any) {
 		}
 		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
+		if value == nil {
+			*valid = false
+			return
+		}
 		if row.dialect == DialectPostgres {
 			switch destPtr.(type) {
 			case *[]string, *[]int, *[]int64, *[]int32, *[]int16, *[]float64, *[]float32, *[]bool:
@@ -442,15 +463,12 @@ func (row *Row) Array(destPtr any, format string, values ...any) {
 					"[]int32, []int16, []float64, []float32 or []bool", destPtr))
 			}
 		}
-
 		var data []byte
 		switch value.(type) {
 		case []byte:
 			data = value.([]byte)
 		case string:
 			data = []byte(value.(string))
-		case nil:
-			destPtr = nil
 			return
 		default:
 			panic(fmt.Errorf(callsite(skip+1)+"%[1]v is %[1]T, not []byte or string", value))
@@ -464,19 +482,28 @@ func (row *Row) Array(destPtr any, format string, values ...any) {
 			return
 		}
 		handlePostgresArray(destPtr, data, skip)
+		*valid = true
 		return
 	}
-	row.array(destPtr, Expr(format, values...), skip)
+	row.array(destPtr, valid, Expr(format, values...), skip)
 }
 
 // ArrayField scans the array field into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) ArrayField(destPtr any, field Array) {
 	makeQueryIsStaticPanic(row, "ArrayField")
-	row.array(destPtr, field, 1)
+	var valid bool
+	row.array(destPtr, &valid, field, 1)
 }
 
-func (row *Row) array(destPtr any, field Array, skip int) {
+// NullArrayField scans the array field into destPtr. The destPtr must be a pointer
+// to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
+func (row *Row) NullArrayField(destPtr any, valid *bool, field Array) {
+	makeQueryIsStaticPanic(row, "ArrayField")
+	row.array(destPtr, valid, field, 1)
+}
+
+func (row *Row) array(destPtr any, valid *bool, field Array, skip int) {
 	if row.sqlRows == nil {
 		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
 			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
@@ -501,7 +528,8 @@ func (row *Row) array(destPtr any, field Array, skip int) {
 		row.runningIndex++
 	}()
 	scanDest := row.scanDest[row.runningIndex].(*nullBytes)
-	if !scanDest.valid {
+	*valid = scanDest.valid
+	if !*valid {
 		return
 	}
 	if row.dialect != DialectPostgres {
@@ -734,10 +762,20 @@ func (row *Row) NullBoolField(field Boolean) NullBool {
 
 // Enum scans the enum expression into destPtr.
 func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
+	var valid bool
+	row.NullEnum(destPtr, &valid, format, values...)
+}
+
+// NullEnum scans the enum expression into destPtr.
+func (row *Row) NullEnum(destPtr Enumeration, valid *bool, format string, values ...any) {
 	skip := 1
 	if row.queryIsStatic {
 		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
+		if value == nil {
+			*valid = false
+			return
+		}
 		switch value.(type) {
 		case int, int8, int16, int32, int64,
 			uint, uint8, uint16, uint32, uint64,
@@ -750,6 +788,7 @@ func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 			if enumIndex < 0 {
 				panic(fmt.Errorf(callsite(skip+1)+"%q is not a valid %T", name, destPtr))
 			}
+			*valid = true
 			switch destValue.Kind() {
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				destValue.SetInt(int64(enumIndex))
@@ -764,16 +803,23 @@ func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 		}
 		return
 	}
-	row.enum(destPtr, Expr(format, values...), skip)
+	row.enum(destPtr, valid, Expr(format, values...), skip)
 }
 
 // EnumField scans the enum field into destPtr.
 func (row *Row) EnumField(destPtr Enumeration, field Enum) {
 	makeQueryIsStaticPanic(row, "EnumField")
-	row.enum(destPtr, field, 1)
+	var valid bool
+	row.enum(destPtr, &valid, field, 1)
 }
 
-func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
+// NullEnumField scans the enum field into destPtr.
+func (row *Row) NullEnumField(destPtr Enumeration, valid *bool, field Enum) {
+	makeQueryIsStaticPanic(row, "EnumField")
+	row.enum(destPtr, valid, field, 1)
+}
+
+func (row *Row) enum(destPtr Enumeration, valid *bool, field Enum, skip int) {
 	if row.sqlRows == nil {
 		destType := reflect.TypeOf(destPtr)
 		if destType.Kind() != reflect.Ptr {
@@ -797,6 +843,7 @@ func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
 	names := destPtr.Enumerate()
 	enumIndex := 0
 	destValue := reflect.ValueOf(destPtr).Elem()
+	*valid = scanDest.Valid
 	if scanDest.Valid {
 		enumIndex = getEnumIndex(scanDest.V, names, destValue.Type())
 	}
@@ -812,6 +859,7 @@ func (row *Row) enum(destPtr Enumeration, field Enum, skip int) {
 		destValue.SetString(scanDest.V)
 	default:
 	}
+	return
 }
 
 func castNumericType[T NumericType](value any, valueKind reflect.Kind, convFunc func(i any) (T, error)) T {
@@ -1224,65 +1272,139 @@ func (row *Row) NullUint64Field(field Number) NullUint64 {
 	return NullNumericField[uint64](row, field)
 }
 
-// JSON scans the JSON expression into destPtr.
-func (row *Row) JSON(destPtr any, format string, values ...any) {
+// JSON returns the JSONType value.
+func (row *Row) JSON(format string, values ...any) types.JSON {
+	return row.NullJSON(format, values...).V
+}
+
+// JSONField returns the JSONField value.
+func (row *Row) JSONField(field JSON) types.JSON {
+	makeQueryIsStaticPanic(row, "JSONField")
+	return row.json(field, 1).V
+}
+
+// NullJSON scans the JSON field into destPtr.
+func (row *Row) NullJSON(format string, values ...any) NullJSON {
 	skip := 1
 	if row.queryIsStatic {
-		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
-			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
-		}
 		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
+		var result NullJSON
+		if value == nil {
+			return result
+		}
 		handleFunc := func(data []byte) {
-			if err := json.Unmarshal(data, destPtr); err != nil {
+			var v types.JSON
+			if err := json.Unmarshal(data, &v); err != nil {
 				_, file, line, _ := runtime.Caller(skip + 1)
-				panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(data), destPtr, err))
+				panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(data), &result, err))
 			}
+			result.V = v
+			result.Valid = true
 		}
 		switch value.(type) {
-		case nil:
-			destPtr = nil
 		case []byte:
 			handleFunc(value.([]byte))
 		case string:
 			handleFunc([]byte(value.(string)))
 		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not enum", value))
+			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not JSON", value))
 		}
-		return
+		return result
 	}
-	row.json(destPtr, Expr(format, values...), skip)
+	return row.json(Expr(format, values...), skip)
 }
 
-// JSONField scans the JSON field into destPtr.
-func (row *Row) JSONField(destPtr any, field JSON) {
+// NullJSONField scans the JSON field into destPtr.
+func (row *Row) NullJSONField(field JSON) NullJSON {
 	makeQueryIsStaticPanic(row, "JSONField")
-	row.json(destPtr, field, 1)
+	return row.json(field, 1)
 }
 
-func (row *Row) json(destPtr any, field JSON, skip int) {
+func (row *Row) json(field JSON, skip int) NullJSON {
+	var result NullJSON
 	if row.sqlRows == nil {
-		if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
-			panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
-		}
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &nullBytes{
 			dialect:     row.dialect,
 			displayType: displayTypeString,
 		})
-		return
+		return result
 	}
 	defer func() {
 		row.runningIndex++
 	}()
 	scanDest := row.scanDest[row.runningIndex].(*nullBytes)
 	if scanDest.valid {
-		err := json.Unmarshal(scanDest.bytes, destPtr)
+		var jv types.JSON
+		err := json.Unmarshal(scanDest.bytes, &jv)
 		if err != nil {
 			_, file, line, _ := runtime.Caller(skip + 1)
-			panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(scanDest.bytes), destPtr, err))
+			panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(scanDest.bytes), &jv, err))
 		}
+		result.V = jv
+		result.Valid = true
 	}
+	return result
+}
+
+// JSONBytes returns the JSON bytes value.
+func (row *Row) JSONBytes(format string, values ...any) types.JSONBytes {
+	return row.NullJSONBytes(format, values...).V
+}
+
+// JSONBytesField returns the JSONField value.
+func (row *Row) JSONBytesField(field JSON) types.JSONBytes {
+	makeQueryIsStaticPanic(row, "JSONBytesField")
+	return row.jsonBytes(field).V
+}
+
+// NullJSONBytes returns the JSON field bytes value.
+func (row *Row) NullJSONBytes(format string, values ...any) NullJSONBytes {
+	if row.queryIsStatic {
+		var result NullJSONBytes
+		index := makeNoColumnIndexPanic(row, format)
+		value := row.values[index]
+		if value == nil {
+			return result
+		}
+		switch value.(type) {
+		case []byte:
+			result.V = types.JSONBytes(value.([]byte))
+		case string:
+			result.V = types.JSONBytes(value.(string))
+		default:
+			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not JSON bytes", value))
+		}
+		result.Valid = true
+		return result
+	}
+	return row.jsonBytes(Expr(format, values...))
+}
+
+// NullJSONBytesField scans the JSON field into destPtr.
+func (row *Row) NullJSONBytesField(field JSON) NullJSONBytes {
+	makeQueryIsStaticPanic(row, "JSONField")
+	return row.jsonBytes(field)
+}
+
+func (row *Row) jsonBytes(field JSON) NullJSONBytes {
+	var result NullJSONBytes
+	if row.sqlRows == nil {
+		row.fields = append(row.fields, field)
+		row.scanDest = append(row.scanDest, &nullBytes{
+			dialect:     row.dialect,
+			displayType: displayTypeString,
+		})
+		return result
+	}
+	defer func() {
+		row.runningIndex++
+	}()
+	scanDest := row.scanDest[row.runningIndex].(*nullBytes)
+	result.V = scanDest.bytes
+	result.Valid = scanDest.valid
+	return result
 }
 
 // String returns the string value of the expression.
@@ -1444,81 +1566,70 @@ func (row *Row) NullTimeField(field Time) NullTime {
 }
 
 // UUID scans the UUID expression into destPtr.
-func (row *Row) UUID(destPtr any, format string, values ...any) {
+func (row *Row) UUID(format string, values ...any) types.UUID {
+	return row.NullUUID(format, values...).V
+}
+
+// UUIDField returns the UUID value.
+func (row *Row) UUIDField(field UUID) types.UUID {
+	makeQueryIsStaticPanic(row, "UUIDField")
+	return row.uuid(field, 1).V
+}
+
+func (row *Row) NullUUID(format string, values ...any) NullUUID {
 	skip := 1
 	if row.queryIsStatic {
-		if _, ok := destPtr.(*[16]byte); !ok {
-			if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
-				panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
-			}
-			destValue := reflect.ValueOf(destPtr).Elem()
-			if destValue.Kind() != reflect.Array || destValue.Len() != 16 || destValue.Type().Elem().Kind() != reflect.Uint8 {
-				panic(fmt.Errorf(callsite(skip+1)+"%T is not a pointer to a [16]byte", destPtr))
-			}
-		}
 		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
+		var result NullUUID
+		var uuid types.UUID
+		var err error
 		switch value.(type) {
-		case nil:
-			destPtr = (*[16]byte)(nil)
 		case []byte:
 			data := value.([]byte)
 			if len(data) != 16 {
 				panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not a [16]byte", value))
 			}
-			uuid, err := googleuuid.ParseBytes(data)
+			uuid, err = googleuuid.ParseBytes(data)
 			if err != nil {
 				panic(fmt.Errorf(callsite(skip+1)+"parsing %q as UUID bytes: %w", string(data), err))
 			}
-			destArrayPtr := destPtr.(*[16]byte)
-			copy(destArrayPtr[:], uuid[:])
 		case string:
 			str := value.(string)
-			uuid, err := googleuuid.Parse(str)
+			uuid, err = googleuuid.Parse(str)
 			if err != nil {
 				panic(fmt.Errorf(callsite(skip+1)+"parsing %q as UUID string: %w", str, err))
-			}
-			if destArrayPtr, ok := destPtr.(*[16]byte); ok {
-				copy((*destArrayPtr)[:], uuid[:])
 			}
 		default:
 			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not a [16]byte", value))
 		}
-		return
+		result.V = uuid
+		result.Valid = true
+		return result
 	}
-	row.uuid(destPtr, Expr(format, values...), skip)
+	return row.uuid(Expr(format, values...), skip)
 }
 
-// UUIDField scans the UUID field into destPtr.
-func (row *Row) UUIDField(destPtr any, field UUID) {
-	makeQueryIsStaticPanic(row, "UUIDField")
-	row.uuid(destPtr, field, 1)
+func (row *Row) NullUUIDField(field UUID) NullUUID {
+	return row.uuid(field, 1)
 }
 
-func (row *Row) uuid(destPtr any, field UUID, skip int) {
+func (row *Row) uuid(field UUID, skip int) NullUUID {
+	var uv NullUUID
 	if row.sqlRows == nil {
-		if _, ok := destPtr.(*[16]byte); !ok {
-			if reflect.TypeOf(destPtr).Kind() != reflect.Ptr {
-				panic(fmt.Errorf(callsite(skip+1)+"cannot pass in non pointer value (%#v) as destPtr", destPtr))
-			}
-			destValue := reflect.ValueOf(destPtr).Elem()
-			if destValue.Kind() != reflect.Array || destValue.Len() != 16 || destValue.Type().Elem().Kind() != reflect.Uint8 {
-				panic(fmt.Errorf(callsite(skip+1)+"%T is not a pointer to a [16]byte", destPtr))
-			}
-		}
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &nullBytes{
 			dialect:     row.dialect,
 			displayType: displayTypeUUID,
 		})
-		return
+		return uv
 	}
 	defer func() {
 		row.runningIndex++
 	}()
 	scanDest := row.scanDest[row.runningIndex].(*nullBytes)
 	var err error
-	var uuid [16]byte
+	var uuid types.UUID
 	if len(scanDest.bytes) == 16 {
 		copy(uuid[:], scanDest.bytes)
 	} else if len(scanDest.bytes) > 0 {
@@ -1527,20 +1638,9 @@ func (row *Row) uuid(destPtr any, field UUID, skip int) {
 			panic(fmt.Errorf(callsite(skip+1)+"parsing %q as UUID string: %w", string(scanDest.bytes), err))
 		}
 	}
-	if destArrayPtr, ok := destPtr.(*[16]byte); ok {
-		copy((*destArrayPtr)[:], uuid[:])
-		return
-	}
-	destValue := reflect.ValueOf(destPtr).Elem()
-	for i := 0; i < 16; i++ {
-		destValue.Index(i).Set(reflect.ValueOf(uuid[i]))
-	}
-}
-
-var zeroUUID [16]byte
-
-func IsZeroUUID(u [16]byte) bool {
-	return bytes.Equal(u[:], zeroUUID[:])
+	uv.V = uuid
+	uv.Valid = scanDest.valid
+	return uv
 }
 
 func callsite(skip int) string {
@@ -1600,7 +1700,7 @@ func (n *nullBytes) Value() (driver.Value, error) {
 		if n.dialect != "postgres" {
 			return n.bytes, nil
 		}
-		var uuid [16]byte
+		var uuid types.UUID
 		var buf [36]byte
 		copy(uuid[:], n.bytes)
 		googleuuid.EncodeHex(buf[:], uuid)

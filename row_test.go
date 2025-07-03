@@ -3,7 +3,6 @@ package sq
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/google/uuid"
@@ -51,8 +50,8 @@ func TestUUIDGen(t *testing.T) {
 }
 
 func TestArrayZero(t *testing.T) {
-	var a1 [18]byte
-	var a2 [18]byte
-
-	assert.Equal(t, a1, a2)
+	var js = `{"name":"abc", "level":999}`
+	var nj NullJSON
+	err := json.Unmarshal([]byte(js), &nj)
+	require.NoError(t, err)
 }

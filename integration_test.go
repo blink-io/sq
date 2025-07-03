@@ -344,8 +344,8 @@ func TestRow(t *testing.T) {
 				SetDialect(tt.dialect),
 				func(ctx context.Context, row *Row) Table00 {
 					var value Table00
-					row.UUIDField(&value.uuid, TABLE00.UUID)
-					row.JSONField(&value.data, TABLE00.DATA)
+					value.uuid = row.UUIDField(TABLE00.UUID)
+					value.data = row.JSONField(TABLE00.DATA)
 					row.EnumField(&value.color, TABLE00.COLOR)
 					row.EnumField(&value.direction, TABLE00.DIRECTION)
 					row.EnumField(&value.weekday, TABLE00.WEEKDAY)
@@ -433,8 +433,8 @@ func TestRow(t *testing.T) {
 				SetDialect(tt.dialect),
 				func(ctx context.Context, row *Row) Table00 {
 					var value Table00
-					row.UUIDField(&value.uuid, TABLE00.UUID)
-					row.JSONField(&value.data, TABLE00.DATA)
+					value.uuid = row.UUIDField(TABLE00.UUID)
+					value.data = row.JSONField(TABLE00.DATA)
 					row.EnumField(&value.color, TABLE00.COLOR)
 					row.EnumField(&value.direction, TABLE00.DIRECTION)
 					row.EnumField(&value.weekday, TABLE00.WEEKDAY)

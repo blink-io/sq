@@ -433,11 +433,22 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 	}
 }
 
+type ArrayType = interface {
+	[]string | []int | []int64 | []int32
+	[]float64 | []float32 | []bool
+}
+
 // Array scans the array expression into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) Array(destPtr any, format string, values ...any) {
 	var valid bool
 	row.NullArray(destPtr, &valid, format, values...)
+}
+
+func ArrayFrom[T ArrayType](row *Row, format string, values ...any) T {
+	var v T
+	row.Array(&v, format, values...)
+	return v
 }
 
 // NullArray scans the array expression into destPtr. The destPtr must be a pointer
@@ -488,6 +499,13 @@ func (row *Row) NullArray(destPtr any, valid *bool, format string, values ...any
 	row.array(destPtr, valid, Expr(format, values...), skip)
 }
 
+func NullArrayFrom[T ArrayType](row *Row, format string, values ...any) sql.Null[T] {
+	var v T
+	var f bool
+	row.NullArray(&v, &f, format, values...)
+	return sql.Null[T]{V: v, Valid: f}
+}
+
 // ArrayField scans the array field into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) ArrayField(destPtr any, field Array) {
@@ -496,11 +514,24 @@ func (row *Row) ArrayField(destPtr any, field Array) {
 	row.array(destPtr, &valid, field, 1)
 }
 
+func ArrayFieldFrom[T ArrayType](row *Row, field Array) T {
+	var v T
+	row.ArrayField(&v, field)
+	return v
+}
+
 // NullArrayField scans the array field into destPtr. The destPtr must be a pointer
 // to a []string, []int, []int64, []int32, []float64, []float32 or []bool.
 func (row *Row) NullArrayField(destPtr any, valid *bool, field Array) {
 	makeQueryIsStaticPanic(row, "ArrayField")
 	row.array(destPtr, valid, field, 1)
+}
+
+func NullArrayFieldFrom[T ArrayType](row *Row, field Array) sql.Null[T] {
+	var v T
+	var f bool
+	row.NullArrayField(&v, &f, field)
+	return sql.Null[T]{V: v, Valid: f}
 }
 
 func (row *Row) array(destPtr any, valid *bool, field Array, skip int) {
@@ -766,6 +797,25 @@ func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 	row.NullEnum(destPtr, &valid, format, values...)
 }
 
+func EnumFrom[V Enumeration](row *Row, format string, values ...any) V {
+	var v V
+	row.Enum(v, format, values...)
+	return v
+}
+
+// EnumField scans the enum field into destPtr.
+func (row *Row) EnumField(destPtr Enumeration, field Enum) {
+	makeQueryIsStaticPanic(row, "EnumField")
+	var valid bool
+	row.enum(destPtr, &valid, field, 1)
+}
+
+func EnumFieldFrom[V Enumeration](row *Row, field Enum) V {
+	var v V
+	row.EnumField(v, field)
+	return v
+}
+
 // NullEnum scans the enum expression into destPtr.
 func (row *Row) NullEnum(destPtr Enumeration, valid *bool, format string, values ...any) {
 	skip := 1
@@ -806,17 +856,24 @@ func (row *Row) NullEnum(destPtr Enumeration, valid *bool, format string, values
 	row.enum(destPtr, valid, Expr(format, values...), skip)
 }
 
-// EnumField scans the enum field into destPtr.
-func (row *Row) EnumField(destPtr Enumeration, field Enum) {
-	makeQueryIsStaticPanic(row, "EnumField")
-	var valid bool
-	row.enum(destPtr, &valid, field, 1)
+func NullEnumFrom[V Enumeration](row *Row, format string, values ...any) sql.Null[V] {
+	var v V
+	var f bool
+	row.NullEnum(v, &f, format, values...)
+	return sql.Null[V]{V: v, Valid: f}
 }
 
 // NullEnumField scans the enum field into destPtr.
 func (row *Row) NullEnumField(destPtr Enumeration, valid *bool, field Enum) {
 	makeQueryIsStaticPanic(row, "EnumField")
 	row.enum(destPtr, valid, field, 1)
+}
+
+func NullEnumFieldFrom[V Enumeration](row *Row, field Enum) sql.Null[V] {
+	var v V
+	var f bool
+	row.NullEnumField(v, &f, field)
+	return sql.Null[V]{V: v, Valid: f}
 }
 
 func (row *Row) enum(destPtr Enumeration, valid *bool, field Enum, skip int) {
@@ -1297,7 +1354,7 @@ func (row *Row) NullJSON(format string, values ...any) NullJSON {
 			var v types.JSON
 			if err := json.Unmarshal(data, &v); err != nil {
 				_, file, line, _ := runtime.Caller(skip + 1)
-				panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(data), &result, err))
+				panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(data), &v, err))
 			}
 			result.V = v
 			result.Valid = true
@@ -1327,7 +1384,7 @@ func (row *Row) json(field JSON, skip int) NullJSON {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &nullBytes{
 			dialect:     row.dialect,
-			displayType: displayTypeString,
+			displayType: displayTypeBinary,
 		})
 		return result
 	}
@@ -1336,13 +1393,14 @@ func (row *Row) json(field JSON, skip int) NullJSON {
 	}()
 	scanDest := row.scanDest[row.runningIndex].(*nullBytes)
 	if scanDest.valid {
-		var jv types.JSON
-		err := json.Unmarshal(scanDest.bytes, &jv)
+		var v types.JSON
+		var bytes = scanDest.bytes
+		err := json.Unmarshal(bytes, &v)
 		if err != nil {
 			_, file, line, _ := runtime.Caller(skip + 1)
-			panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(scanDest.bytes), &jv, err))
+			panic(fmt.Errorf(callsite(skip+1)+"unmarshaling json %q into %T: %w", file, line, string(bytes), &v, err))
 		}
-		result.V = jv
+		result.V = v
 		result.Valid = true
 	}
 	return result
@@ -1362,9 +1420,9 @@ func (row *Row) JSONBytesField(field JSON) types.JSONBytes {
 // NullJSONBytes returns the JSON field bytes value.
 func (row *Row) NullJSONBytes(format string, values ...any) NullJSONBytes {
 	if row.queryIsStatic {
-		var result NullJSONBytes
 		index := makeNoColumnIndexPanic(row, format)
 		value := row.values[index]
+		var result NullJSONBytes
 		if value == nil {
 			return result
 		}
@@ -1394,7 +1452,7 @@ func (row *Row) jsonBytes(field JSON) NullJSONBytes {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &nullBytes{
 			dialect:     row.dialect,
-			displayType: displayTypeString,
+			displayType: displayTypeBinary,
 		})
 		return result
 	}
@@ -1410,26 +1468,7 @@ func (row *Row) jsonBytes(field JSON) NullJSONBytes {
 // String returns the string value of the expression.
 func (row *Row) String(format string, values ...any) string {
 	if row.queryIsStatic {
-		index := makeNoColumnIndexPanic(row, format)
-		value := row.values[index]
-		switch value := value.(type) {
-		case int64:
-			panic(fmt.Errorf(callsite(1)+"%d is int64, not string", value))
-		case float64:
-			panic(fmt.Errorf(callsite(1)+"%d is float64, not string", value))
-		case bool:
-			panic(fmt.Errorf(callsite(1)+"%v is bool, not string", value))
-		case []byte:
-			return string(value)
-		case string:
-			return value
-		case time.Time:
-			panic(fmt.Errorf(callsite(1)+"%v is time.Time, not string", value))
-		case nil:
-			return ""
-		default:
-			panic(fmt.Errorf(callsite(1)+"%[1]v is %[1]T, not string", value))
-		}
+		return row.NullString(format, values...).V
 	}
 	return row.NullStringField(Expr(format, values...)).V
 }
@@ -1611,6 +1650,7 @@ func (row *Row) NullUUID(format string, values ...any) NullUUID {
 }
 
 func (row *Row) NullUUIDField(field UUID) NullUUID {
+	makeQueryIsStaticPanic(row, "NullUUIDField")
 	return row.uuid(field, 1)
 }
 
@@ -1628,18 +1668,20 @@ func (row *Row) uuid(field UUID, skip int) NullUUID {
 		row.runningIndex++
 	}()
 	scanDest := row.scanDest[row.runningIndex].(*nullBytes)
+	var v types.UUID
 	var err error
-	var uuid types.UUID
-	if len(scanDest.bytes) == 16 {
-		copy(uuid[:], scanDest.bytes)
-	} else if len(scanDest.bytes) > 0 {
-		uuid, err = googleuuid.ParseBytes(scanDest.bytes)
+	var bytes = scanDest.bytes
+	var valid = scanDest.valid
+	if len(bytes) == 16 {
+		copy(v[:], bytes)
+	} else if len(bytes) > 0 {
+		v, err = googleuuid.ParseBytes(bytes)
 		if err != nil {
-			panic(fmt.Errorf(callsite(skip+1)+"parsing %q as UUID string: %w", string(scanDest.bytes), err))
+			panic(fmt.Errorf(callsite(skip+1)+"parsing %q as UUID string: %w", string(bytes), err))
 		}
 	}
-	uv.V = uuid
-	uv.Valid = scanDest.valid
+	uv.V = v
+	uv.Valid = valid
 	return uv
 }
 
@@ -1694,6 +1736,8 @@ func (n *nullBytes) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	switch n.displayType {
+	case displayTypeBinary:
+		return n.bytes, nil
 	case displayTypeString:
 		return string(n.bytes), nil
 	case displayTypeUUID:

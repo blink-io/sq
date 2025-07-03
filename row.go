@@ -662,7 +662,8 @@ func (row *Row) Bytes(format string, values ...any) []byte {
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, Expr(format, values...))
 		row.scanDest = append(row.scanDest, &nullBytes{
-			dialect: row.dialect,
+			displayType: displayTypeBinary,
+			dialect:     row.dialect,
 		})
 		return nil
 	}
@@ -684,7 +685,8 @@ func (row *Row) BytesField(field Binary) []byte {
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &nullBytes{
-			dialect: row.dialect,
+			displayType: displayTypeBinary,
+			dialect:     row.dialect,
 		})
 		return nil
 	}
@@ -1036,7 +1038,6 @@ func NumericValue[T NumericType](row *Row, format string, values ...any) T {
 }
 
 func NullNumericField[T NumericType](row *Row, field Number) sql.Null[T] {
-	//makeQueryIsStaticPanic(row, GetType[T]())
 	if row.sqlRows == nil {
 		row.fields = append(row.fields, field)
 		row.scanDest = append(row.scanDest, &sql.Null[T]{})

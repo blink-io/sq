@@ -131,6 +131,7 @@ func fetchCursor[T any](ctx context.Context, db DB, query Query, rowMapper RowMa
 	if cursor.logSettings.IncludeTime {
 		cursor.queryStats.StartedAt = time.Now()
 	}
+	// Execute query.
 	cursor.row.sqlRows, cursor.queryStats.Err = db.QueryContext(ctx, cursor.queryStats.Query, cursor.queryStats.Args...)
 	if cursor.logSettings.IncludeTime {
 		cursor.queryStats.TimeTaken = time.Since(cursor.queryStats.StartedAt)
@@ -216,8 +217,7 @@ func (cursor *Cursor[T]) Result() (result T, err error) {
 	}
 	cursor.row.runningIndex = 0
 	defer mapperFunctionPanicked(&err)
-	ctx := context.Background()
-	result = cursor.rowMapper(ctx, cursor.row)
+	result = cursor.rowMapper(context.Background(), cursor.row)
 	return result, nil
 }
 

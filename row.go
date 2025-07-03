@@ -46,6 +46,11 @@ type (
 	NullJSONBytes = sql.Null[types.JSONBytes]
 	NullUUID      = sql.Null[types.UUID]
 
+	ArrayType = interface {
+		[]string | []int | []int64 | []int32
+		[]float64 | []float32 | []bool
+	}
+
 	NumericType = interface {
 		~int | ~int8 | ~int16 | ~int32 | ~int64 |
 			~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
@@ -63,7 +68,7 @@ func NullFrom[V any](v V, valid bool) sql.Null[V] {
 	return sql.Null[V]{V: v, Valid: valid}
 }
 
-func ValidNullFrom[V any](v V) sql.Null[V] {
+func ValidFrom[V any](v V) sql.Null[V] {
 	return sql.Null[V]{V: v, Valid: true}
 }
 
@@ -431,11 +436,6 @@ func (row *Row) scan(destPtr any, field Field, skip int) {
 		srcValue := reflect.ValueOf(row.scanDest[row.runningIndex]).Elem()
 		destValue.Set(srcValue)
 	}
-}
-
-type ArrayType = interface {
-	[]string | []int | []int64 | []int32
-	[]float64 | []float32 | []bool
 }
 
 // Array scans the array expression into destPtr. The destPtr must be a pointer

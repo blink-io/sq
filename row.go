@@ -25,9 +25,6 @@ type (
 	RowMapper[T any] func(context.Context, *Row) T
 )
 
-var _ sql.Scanner = (*sql.Null)(nil)
-var _ driver.Valuer = sql.Null[any]{}
-
 type (
 	NullBytes     = sql.Null[[]byte]
 	NullBool      = sql.Null[bool]
@@ -49,18 +46,18 @@ type (
 	NullJSONBytes = sql.Null[types.JSONBytes]
 	NullUUID      = sql.Null[types.UUID]
 
-	ArrayType = interface {
-		[]string | []int | []int64 | []int32
-		[]float64 | []float32 | []bool
+	ArrayType interface {
+		~[]string | ~[]int | ~[]int64 | ~[]int32 |
+			~[]float64 | ~[]float32 | ~[]bool
 	}
 
-	NumericType = interface {
+	NumericType interface {
 		~int | ~int8 | ~int16 | ~int32 | ~int64 |
 			~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
 			~float32 | ~float64
 	}
 
-	NullNumericType = interface {
+	NullNumericType interface {
 		NullInt | NullInt8 | NullInt16 | NullInt32 | NullInt64 |
 			NullUint | NullUint8 | NullUint16 | NullUint32 | NullUint64 |
 			NullFloat32 | NullFloat64
@@ -483,7 +480,6 @@ func (row *Row) NullArray(destPtr any, valid *bool, format string, values ...any
 			data = value.([]byte)
 		case string:
 			data = []byte(value.(string))
-			return
 		default:
 			panic(fmt.Errorf(callsite(skip+1)+"%[1]v is %[1]T, not []byte or string", value))
 		}
@@ -705,6 +701,17 @@ func (row *Row) BytesField(field Binary) []byte {
 	return b
 }
 
+func (row *Row) NullBytes(format string, values ...any) NullBytes {
+	bytes := row.Bytes(format, values...)
+	return NullBytes{V: bytes, Valid: bytes != nil}
+}
+
+// NullBytesField returns the []byte value of the field.
+func (row *Row) NullBytesField(field Binary) NullBytes {
+	bytes := row.BytesField(field)
+	return NullBytes{V: bytes, Valid: bytes != nil}
+}
+
 // == Bool == //
 
 // Bool returns the bool value of the expression.
@@ -802,23 +809,11 @@ func (row *Row) Enum(destPtr Enumeration, format string, values ...any) {
 	row.NullEnum(destPtr, &valid, format, values...)
 }
 
-func EnumFrom[V Enumeration](row *Row, format string, values ...any) V {
-	var v V
-	row.Enum(v, format, values...)
-	return v
-}
-
 // EnumField scans the enum field into destPtr.
 func (row *Row) EnumField(destPtr Enumeration, field Enum) {
 	makeQueryIsStaticPanic(row, "EnumField")
 	var valid bool
 	row.enum(destPtr, &valid, field, 1)
-}
-
-func EnumFieldFrom[V Enumeration](row *Row, field Enum) V {
-	var v V
-	row.EnumField(v, field)
-	return v
 }
 
 // NullEnum scans the enum expression into destPtr.
@@ -861,24 +856,10 @@ func (row *Row) NullEnum(destPtr Enumeration, valid *bool, format string, values
 	row.enum(destPtr, valid, Expr(format, values...), skip)
 }
 
-func NullEnumFrom[V Enumeration](row *Row, format string, values ...any) sql.Null[V] {
-	var v V
-	var f bool
-	row.NullEnum(v, &f, format, values...)
-	return sql.Null[V]{V: v, Valid: f}
-}
-
 // NullEnumField scans the enum field into destPtr.
 func (row *Row) NullEnumField(destPtr Enumeration, valid *bool, field Enum) {
 	makeQueryIsStaticPanic(row, "EnumField")
 	row.enum(destPtr, valid, field, 1)
-}
-
-func NullEnumFieldFrom[V Enumeration](row *Row, field Enum) sql.Null[V] {
-	var v V
-	var f bool
-	row.NullEnumField(v, &f, field)
-	return sql.Null[V]{V: v, Valid: f}
 }
 
 func (row *Row) enum(destPtr Enumeration, valid *bool, field Enum, skip int) {
